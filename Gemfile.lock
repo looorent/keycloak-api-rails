@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    keycloak-api-rails (0.3)
+    keycloak-api-rails (0.4)
       json-jwt (~> 1.8, >= 1.8.3)
       rails (>= 4.2)
 
