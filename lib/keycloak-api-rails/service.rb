@@ -24,7 +24,7 @@ module Keycloak
       end
     rescue JSON::JWT::VerificationFailed => e
       raise TokenError.verification_failed(token, e)
-    rescue JWK::Set::KidNotFound => e
+    rescue JSON::JWK::Set::KidNotFound => e
       raise TokenError.verification_failed(token, e)
     rescue JSON::JWT::InvalidFormat
       raise TokenError.invalid_format(token, e)

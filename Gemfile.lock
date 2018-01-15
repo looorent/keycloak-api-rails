@@ -1,9 +1,9 @@
 PATH
   remote: .
   specs:
-    keycloak-api-rails (0.1)
+    keycloak-api-rails (0.2)
       json-jwt (~> 1.8, >= 1.8.3)
-      rails (~> 5.1.4, >= 5.0)
+      rails (>= 4.2)
 
 GEM
   remote: https://rubygems.org/
@@ -142,4 +142,4 @@ DEPENDENCIES
   timecop (= 0.9.1)
 
 BUNDLED WITH
-   1.15.3
+   1.16.1
