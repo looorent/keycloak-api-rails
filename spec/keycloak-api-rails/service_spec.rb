@@ -105,8 +105,9 @@ RSpec.describe Keycloak::Service do
 
   describe "#need_authentication?" do
 
-    let(:method) { nil }
-    let(:path)   { nil }
+    let(:method)  { nil }
+    let(:path)    { nil }
+    let(:headers) { {} }
 
 
     before(:each) do
@@ -114,7 +115,7 @@ RSpec.describe Keycloak::Service do
         post:   [/^\/skip/],
         get:    [/^\/skip/]
       }
-      @result = service.need_authentication?(method, path)
+      @result = service.need_authentication?(method, path, headers)
     end
 
     context "when method is nil" do
@@ -133,7 +134,7 @@ RSpec.describe Keycloak::Service do
       end
     end
 
-    context "when method does not math the configuration" do
+    context "when method does not match the configuration" do
       let(:method) { :put }
       let(:path)   { "/skip" }
       it "should return true" do
@@ -161,6 +162,15 @@ RSpec.describe Keycloak::Service do
     context "when method [post] and path do match the configuration" do
       let(:method) { :get }
       let(:path)   { "/skip" }
+      it "should return false" do
+        expect(@result).to be false
+      end
+    end
+
+    context "when the request is preflight" do
+      let(:method)  { :options }
+      let(:headers) { { "ACCESS_CONTROL_REQUEST_METHOD" => ["Authorization"] } }
+      let(:path)    { "/do-not-skip" }
       it "should return false" do
         expect(@result).to be false
       end

@@ -42,13 +42,22 @@ module Keycloak
       end
     end
 
-    def need_authentication?(method, path)
-      method_symbol = method&.downcase&.to_sym
-      skip_paths    = @skip_paths[method_symbol]
-      skip_paths.nil? || skip_paths.empty? || skip_paths.find_index { |skip_path| skip_path.match(path) }.nil?
+    def need_authentication?(method, path, headers)
+      !should_skip?(method, path) && !is_preflight?(method, headers)
     end
 
     private
+
+    def should_skip?(method, path)
+      method_symbol = method&.downcase&.to_sym
+      skip_paths    = @skip_paths[method_symbol]
+      !skip_paths.nil? && !skip_paths.empty? && !skip_paths.find_index { |skip_path| skip_path.match(path) }.nil?
+    end
+
+    def is_preflight?(method, headers)
+      method_symbol = method&.downcase&.to_sym
+      method_symbol == :options && !headers["ACCESS_CONTROL_REQUEST_METHOD"].nil?
+    end
 
     def expired?(token)
       token_expiration = Time.at(token["exp"]).to_datetime

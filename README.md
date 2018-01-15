@@ -37,7 +37,7 @@ All options have a default value. However, all of them can be changed in your in
 | `public_key_cache_ttl` | `86400`| Integer | Optional | Amount of time, in seconds, specifying maximum interval between two requests to {project_name} to retrieve new public keys. It is 86400 seconds (1 day) by default. At least once per this configured interval (1 day by default) will be new public key always downloaded. | `Rails.logger` | 
 
 
-## Configure it
+## Configure it 
 
 Create a `keycloak.rb` file in your Rails `config/initializers` folder. For instance:
 
