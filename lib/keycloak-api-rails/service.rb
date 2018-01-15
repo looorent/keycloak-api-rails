@@ -56,7 +56,7 @@ module Keycloak
 
     def is_preflight?(method, headers)
       method_symbol = method&.downcase&.to_sym
-      method_symbol == :options && !headers["ACCESS_CONTROL_REQUEST_METHOD"].nil?
+      method_symbol == :options && !headers["HTTP_ACCESS_CONTROL_REQUEST_METHOD"].nil?
     end
 
     def expired?(token)

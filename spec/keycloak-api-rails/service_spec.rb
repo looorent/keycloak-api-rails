@@ -169,7 +169,7 @@ RSpec.describe Keycloak::Service do
 
     context "when the request is preflight" do
       let(:method)  { :options }
-      let(:headers) { { "ACCESS_CONTROL_REQUEST_METHOD" => ["Authorization"] } }
+      let(:headers) { { "HTTP_ACCESS_CONTROL_REQUEST_METHOD" => ["Authorization"] } }
       let(:path)    { "/do-not-skip" }
       it "should return false" do
         expect(@result).to be false
