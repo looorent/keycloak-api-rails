@@ -1,8 +1,9 @@
 module Keycloak
   class Helper
     
-    CURRENT_USER_ID_KEY = "keycloak:keycloak_id"
-    ROLES_KEY           = "keycloak:roles"
+    CURRENT_USER_ID_KEY    = "keycloak:keycloak_id"
+    ROLES_KEY              = "keycloak:roles"
+    QUERY_STRING_TOKEN_KEY = "authorizationToken"
 
     def self.current_user_id(env)
       env[CURRENT_USER_ID_KEY]
@@ -18,6 +19,25 @@ module Keycloak
 
     def self.assign_realm_roles(env, token)
       env[ROLES_KEY] = token.dig("realm_access", "roles")
+    end
+
+    def self.read_token_from_query_string(uri)
+      parsed_uri         = URI.parse(uri)
+      query              = URI.decode_www_form(parsed_uri.query || "")
+      query_string_token = query.detect { |param| param.first == QUERY_STRING_TOKEN_KEY }
+      query_string_token&.second
+    end
+
+    def self.create_url_with_token(uri, token)
+      uri       = URI(uri)
+      params    = URI.decode_www_form(uri.query || "").reject { |query_string| query_string.first == QUERY_STRING_TOKEN_KEY }
+      params    << [QUERY_STRING_TOKEN_KEY, token]
+      uri.query = URI.encode_www_form(params)
+      uri.to_s
+    end
+
+    def self.read_token_from_headers(headers)
+      headers["HTTP_AUTHORIZATION"]&.gsub(/^Bearer /, "") || ""
     end
   end
 end

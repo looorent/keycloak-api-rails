@@ -31,15 +31,7 @@ module Keycloak
     end
 
     def read_token(uri, headers)
-      parsed_uri           = URI.parse(uri)
-      query                = URI.decode_www_form(parsed_uri.query || "")
-      query_string_token   = query.detect { |param| param.first == "authorizationToken" }
-
-      if query_string_token
-        query_string_token.second
-      else
-        headers["HTTP_AUTHORIZATION"]&.gsub(/^Bearer /, "") || ""
-      end
+      Helper.read_token_from_query_string(uri) || Helper.read_token_from_headers(headers)
     end
 
     def need_authentication?(method, path, headers)

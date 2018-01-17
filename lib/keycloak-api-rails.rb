@@ -22,8 +22,12 @@ module Keycloak
     @configuration
   end
 
+  def self.public_key_resolver
+    @public_key_resolver ||= PublicKeyCachedResolver.from_configuration(config)
+  end
+
   def self.service
-    @service ||= Keycloak::Service.new(PublicKeyCachedResolver.from_configuration(config))
+    @service ||= Keycloak::Service.new(public_key_resolver)
   end
 
   def self.logger
