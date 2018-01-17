@@ -30,10 +30,10 @@ All options have a default value. However, all of them can be changed in your in
 | Option | Default Value | Type | Required? | Description  | Example |
 | ---- | ----- | ------ | ----- | ------ | ----- |
 | `server_url` | `nil`| String | Required | The base url where your Keycloak server is located. This value can be retrieved in your Keycloak client configuration. | `auth:8080` |
-| `realm_id` | `nil`| String | Required | TODO | `fdqgqdsg` |
+| `realm_id` | `nil`| String | Required | Realm's name (not id, actually) | `master` |
 | `logger` | `Logger.new(STDOUT)`| Logger | Optional | The logger used by `keycloak-api-rails` | `Rails.logger` | 
 | `skip_paths` | `{}`| Hash of methods and paths regexp | Optional | Paths whose the token must not be validatefd | `{ get: [/^\/health\/.+/] }`| 
-| `token_expiration_tolerance_in_seconds` | `10`| Logger | Optional | TODO | `15` | 
+| `token_expiration_tolerance_in_seconds` | `10`| Logger | Optional | Number of seconds a token can expire before being rejected by the API. | `15` | 
 | `public_key_cache_ttl` | `86400`| Integer | Optional | Amount of time, in seconds, specifying maximum interval between two requests to {project_name} to retrieve new public keys. It is 86400 seconds (1 day) by default. At least once per this configured interval (1 day by default) will be new public key always downloaded. | `Rails.logger` | 
 
 ## Configure it 
@@ -123,7 +123,39 @@ class RenderTokenController < ApplicationController
 end
 ```
 
-## How to execute tests
+## Writing integration tests
+
+If you want to write controller tests in your codebase and that Keycloak is configured for these controllers, here is how to mock it.
+These lines are based on tests written using `rspec`.
+
+* First, create a private key. This key should be created once per test suite for performance matters.
+```ruby
+config.before(:suite) do
+  $private_key = OpenSSL::PKey::RSA.generate(1024)
+end
+```
+* Then, in a `shared_context`, configure a lazy token based on your main user. (here, we assume you have a `user` variable with a `keycloak_id` property)
+```ruby
+let(:jwt) do
+  claims = {
+    iat: Time.zone.now.to_i,
+    exp: (Time.zone.now + 1.day).to_i,
+    sub: user.keycloak_id,
+  }
+  token = JSON::JWT.new(claims)
+  token.kid = "default"
+  token.sign($private_key, :RS256).to_s
+end
+```
+* Finally, in the same `shared_context`, stub `Keycloak.public_key_resolver` to use a valid public key that is able to validate `jwt`:
+```ruby
+before(:each) do
+  public_key_resolver = Keycloak.public_key_resolver
+  allow(public_key_resolver).to receive(:find_public_keys) { JSON::JWK::Set.new(JSON::JWK.new($private_key, kid: "default")) }
+end
+```
+
+## How to execute library tests
 
 From the `keycloak-rails-api` directory:
 
