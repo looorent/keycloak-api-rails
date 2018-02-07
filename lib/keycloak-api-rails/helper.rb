@@ -1,9 +1,11 @@
 module Keycloak
   class Helper
     
-    CURRENT_USER_ID_KEY    = "keycloak:keycloak_id"
-    ROLES_KEY              = "keycloak:roles"
-    QUERY_STRING_TOKEN_KEY = "authorizationToken"
+    CURRENT_USER_ID_KEY     = "keycloak:keycloak_id"
+    CURRENT_USER_EMAIL_KEY  = "keycloak:email"
+    CURRENT_USER_LOCALE_KEY = "keycloak:locale"
+    ROLES_KEY               = "keycloak:roles"
+    QUERY_STRING_TOKEN_KEY  = "authorizationToken"
 
     def self.current_user_id(env)
       env[CURRENT_USER_ID_KEY]
@@ -11,6 +13,22 @@ module Keycloak
 
     def self.assign_current_user_id(env, token)
       env[CURRENT_USER_ID_KEY] = token["sub"]
+    end
+
+    def self.current_user_email(env)
+      env[CURRENT_USER_EMAIL_KEY]
+    end
+
+    def self.assign_current_user_email(env, token)
+      env[CURRENT_USER_EMAIL_KEY] = token["email"]
+    end
+
+    def self.current_user_locale(env)
+      env[CURRENT_USER_LOCALE_KEY]
+    end
+
+    def self.assign_current_user_locale(env, token)
+      env[CURRENT_USER_LOCALE_KEY] = token["locale"]
     end
 
     def self.current_user_roles(env)

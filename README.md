@@ -2,6 +2,12 @@
 
 This gem aims at validates Keycloak JWT token in Ruby On Rails APIs.
 
+## Install
+
+```ruby
+gem "keycloak-api-rails", "0.7"
+```
+
 ## Token validation
 
 Tokens send (through query strings or Authorization headers) to this Railtie Middleware are validated against a Keycloak public key. This public key is downloaded every day by default (this interval can be changed through `public_key_cache_ttl`).

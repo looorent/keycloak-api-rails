@@ -30,6 +30,8 @@ module Keycloak
 
     def authentication_succeeded(env, decoded_token)
       Helper.assign_current_user_id(env, decoded_token)
+      Helper.assign_current_user_email(env, decoded_token)
+      Helper.assign_current_user_locale(env, decoded_token)
       Helper.assign_realm_roles(env, decoded_token)
       @app.call(env)
     end
