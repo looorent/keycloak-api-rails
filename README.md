@@ -5,7 +5,7 @@ This gem aims at validates Keycloak JWT token in Ruby On Rails APIs.
 ## Install
 
 ```ruby
-gem "keycloak-api-rails", "0.7"
+gem "keycloak-api-rails", "0.8"
 ```
 
 ## Token validation
