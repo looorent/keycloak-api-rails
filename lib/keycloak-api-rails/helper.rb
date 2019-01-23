@@ -4,6 +4,7 @@ module Keycloak
     CURRENT_USER_ID_KEY     = "keycloak:keycloak_id"
     CURRENT_USER_EMAIL_KEY  = "keycloak:email"
     CURRENT_USER_LOCALE_KEY = "keycloak:locale"
+    CURRENT_USER_ATTRIBUTES = "keycloak:attributes"
     ROLES_KEY               = "keycloak:roles"
     QUERY_STRING_TOKEN_KEY  = "authorizationToken"
 
@@ -37,6 +38,18 @@ module Keycloak
 
     def self.assign_realm_roles(env, token)
       env[ROLES_KEY] = token.dig("realm_access", "roles")
+    end
+
+    def self.assign_current_user_custom_attributes(env, token, attribute_names)
+      env[CURRENT_USER_ATTRIBUTES] = token.select { |key,value| attribute_names.include?("key") }
+    end
+
+    def self.current_user_custom_attributes(env)
+      env[CURRENT_USER_ATTRIBUTES]
+    end
+
+    def self.current_user_roles(env)
+      env[ROLES_KEY]
     end
 
     def self.read_token_from_query_string(uri)

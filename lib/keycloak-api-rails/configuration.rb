@@ -6,6 +6,7 @@ module Keycloak
     config_accessor :skip_paths
     config_accessor :token_expiration_tolerance_in_seconds
     config_accessor :public_key_cache_ttl
+    config_accessor :custom_attributes
     config_accessor :logger
   end
 end

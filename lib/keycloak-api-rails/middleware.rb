@@ -32,6 +32,7 @@ module Keycloak
       Helper.assign_current_user_id(env, decoded_token)
       Helper.assign_current_user_email(env, decoded_token)
       Helper.assign_current_user_locale(env, decoded_token)
+      Helper.assign_current_user_custom_attributes(env, decoded_token, config.custom_attributes)
       Helper.assign_realm_roles(env, decoded_token)
       @app.call(env)
     end
@@ -42,6 +43,10 @@ module Keycloak
 
     def logger
       Keycloak.logger
+    end
+
+    def config
+      Keycloak.config
     end
   end
 end

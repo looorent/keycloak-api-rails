@@ -5,7 +5,7 @@ This gem aims at validates Keycloak JWT token in Ruby On Rails APIs.
 ## Install
 
 ```ruby
-gem "keycloak-api-rails", "0.8"
+gem "keycloak-api-rails", "0.9"
 ```
 
 ## Token validation
@@ -41,6 +41,7 @@ All options have a default value. However, all of them can be changed in your in
 | `skip_paths` | `{}`| Hash of methods and paths regexp | Optional | Paths whose the token must not be validatefd | `{ get: [/^\/health\/.+/] }`| 
 | `token_expiration_tolerance_in_seconds` | `10`| Logger | Optional | Number of seconds a token can expire before being rejected by the API. | `15` | 
 | `public_key_cache_ttl` | `86400`| Integer | Optional | Amount of time, in seconds, specifying maximum interval between two requests to {project_name} to retrieve new public keys. It is 86400 seconds (1 day) by default. At least once per this configured interval (1 day by default) will be new public key always downloaded. | `Rails.logger` | 
+| `custom_attributes` | `[]`| Array Of String | Optional | List of token attributes to read from each token and to add to their http request env | `["originalFirstName", "originalLastName"]` | 
 
 ## Configure it 
 

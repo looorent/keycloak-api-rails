@@ -42,6 +42,7 @@ module Keycloak
       config.skip_paths                             = {}
       config.token_expiration_tolerance_in_seconds  = 10
       config.public_key_cache_ttl                   = 86400
+      config.custom_attributes                      = []
     end
   end
 
