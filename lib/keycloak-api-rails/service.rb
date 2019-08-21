@@ -34,7 +34,10 @@ module Keycloak
       Helper.read_token_from_query_string(uri) || Helper.read_token_from_headers(headers)
     end
 
-    def need_authentication?(method, path, headers)
+    def need_authentication?(method, path, uri, headers)
+      token = read_token(uri, headers)
+      return false if token.blank?
+
       !should_skip?(method, path) && !is_preflight?(method, headers)
     end
 

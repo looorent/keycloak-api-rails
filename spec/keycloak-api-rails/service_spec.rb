@@ -107,7 +107,8 @@ RSpec.describe Keycloak::Service do
 
     let(:method)  { nil }
     let(:path)    { nil }
-    let(:headers) { {} }
+    let(:uri)    { "http://" }
+    let(:headers) { { "HTTP_AUTHORIZATION" => "Bearer abc" } }
 
 
     before(:each) do
@@ -115,7 +116,7 @@ RSpec.describe Keycloak::Service do
         post:   [/^\/skip/],
         get:    [/^\/skip/]
       }
-      @result = service.need_authentication?(method, path, headers)
+      @result = service.need_authentication?(method, path, uri, headers)
     end
 
     context "when method is nil" do
@@ -171,6 +172,15 @@ RSpec.describe Keycloak::Service do
       let(:method)  { :options }
       let(:headers) { { "HTTP_ACCESS_CONTROL_REQUEST_METHOD" => ["Authorization"] } }
       let(:path)    { "/do-not-skip" }
+      it "should return false" do
+        expect(@result).to be false
+      end
+    end
+
+    context "when token is nil" do
+      let(:method) { :get }
+      let(:path)   { "/do-not-skip" }
+      let(:headers) { {} }
       it "should return false" do
         expect(@result).to be false
       end

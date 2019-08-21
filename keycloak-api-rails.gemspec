@@ -15,7 +15,7 @@ Gem::Specification.new do |spec|
   spec.files = `git ls-files -z`.split("\x0")
   spec.require_paths = ["lib"]
 
-  spec.add_dependency "rails",       ">= 4.2"
+  spec.add_dependency "rails",       ">= 4.1.16"
   spec.add_dependency "json-jwt",    ">= 1.9.4"
   spec.add_dependency "rest-client", ">= 2.0.2"
 
