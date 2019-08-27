@@ -68,7 +68,9 @@ module Keycloak
     end
 
     def self.read_token_from_headers(headers)
-      headers["HTTP_AUTHORIZATION"]&.gsub(/^Bearer /, "") || ""
+      token = headers["HTTP_AUTHORIZATION"]&.gsub(/^Bearer /, "") || ""
+      return "" if token == headers["HTTP_AUTHORIZATION"]
+      return token
     end
   end
 end

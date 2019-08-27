@@ -185,6 +185,15 @@ RSpec.describe Keycloak::Service do
         expect(@result).to be false
       end
     end
+
+    context "when token is not Bearer" do
+      let(:method) { :get }
+      let(:path)   { "/do-not-skip" }
+      let(:headers) { { "HTTP_AUTHORIZATION" => "Basic abc" } }
+      it "should return false" do
+        expect(@result).to be false
+      end
+    end
   end
 
   describe "#read_token" do
