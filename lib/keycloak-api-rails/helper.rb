@@ -52,9 +52,8 @@ module Keycloak
       env[ROLES_KEY]
     end
 
-    def self.read_token_from_query_string(uri)
-      parsed_uri         = URI.parse(uri)
-      query              = URI.decode_www_form(parsed_uri.query || "")
+    def self.read_token_from_query_string(query_string)
+      query              = URI.decode_www_form(query_string || "")
       query_string_token = query.detect { |param| param.first == QUERY_STRING_TOKEN_KEY }
       query_string_token&.second
     end
