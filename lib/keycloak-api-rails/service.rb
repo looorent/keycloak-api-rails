@@ -31,7 +31,7 @@ module Keycloak
     end
 
     def read_token(query_string, headers)
-      Helper.read_token_from_query_string(query_string) || Helper.read_token_from_headers(headers)
+      Helper.read_token_from_headers(headers)
     end
 
     def need_authentication?(method, path, query_string, headers)

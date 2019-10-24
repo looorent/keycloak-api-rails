@@ -6,6 +6,14 @@ module Keycloak
     end
 
     def call(env)
+      if Keycloak.config.server_url.present?
+        authenticate(env)
+      else
+        @app.call(env)
+      end
+    end
+
+    def authenticate(env)
       method = env["REQUEST_METHOD"]
       path   = env["PATH_INFO"]
       query_string = env["QUERY_STRING"]

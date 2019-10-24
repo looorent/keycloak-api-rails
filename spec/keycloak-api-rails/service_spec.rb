@@ -223,7 +223,7 @@ RSpec.describe Keycloak::Service do
       context "and also in the query string" do
         let(:query_string) { "&authorizationToken=#{query_string_token}" }
         it "returns the query string token" do
-          expect(@token).to eq query_string_token
+          expect(@token).to eq header_token
         end
       end
     end
@@ -245,7 +245,7 @@ RSpec.describe Keycloak::Service do
       context "but in the query string" do
         let(:query_string) { "&authorizationToken=#{query_string_token}" }
         it "returns the query string token" do
-          expect(@token).to eq query_string_token
+          expect(@token).to eq ""
         end
       end
     end
