@@ -6,13 +6,21 @@ module Keycloak
     end
 
     def call(env)
+      if Keycloak.config.server_url.present?
+        authenticate(env)
+      else
+        @app.call(env)
+      end
+    end
+
+    def authenticate(env)
       method = env["REQUEST_METHOD"]
       path   = env["PATH_INFO"]
-      uri    = env["REQUEST_URI"]
+      query_string = env["QUERY_STRING"]
       
-      if service.need_authentication?(method, path, env)
+      if service.need_authentication?(method, path, query_string, env)
         logger.debug("Start authentication for #{method} : #{path}")
-        token         = service.read_token(uri, env)
+        token         = service.read_token(query_string, env)
         decoded_token = service.decode_and_verify(token)
         authentication_succeeded(env, decoded_token)
       else

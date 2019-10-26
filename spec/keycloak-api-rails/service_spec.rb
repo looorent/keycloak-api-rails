@@ -107,7 +107,8 @@ RSpec.describe Keycloak::Service do
 
     let(:method)  { nil }
     let(:path)    { nil }
-    let(:headers) { {} }
+    let(:uri)    { "http://" }
+    let(:headers) { { "HTTP_AUTHORIZATION" => "Bearer abc" } }
 
 
     before(:each) do
@@ -115,7 +116,7 @@ RSpec.describe Keycloak::Service do
         post:   [/^\/skip/],
         get:    [/^\/skip/]
       }
-      @result = service.need_authentication?(method, path, headers)
+      @result = service.need_authentication?(method, path, uri, headers)
     end
 
     context "when method is nil" do
@@ -175,6 +176,24 @@ RSpec.describe Keycloak::Service do
         expect(@result).to be false
       end
     end
+
+    context "when token is nil" do
+      let(:method) { :get }
+      let(:path)   { "/do-not-skip" }
+      let(:headers) { {} }
+      it "should return false" do
+        expect(@result).to be false
+      end
+    end
+
+    context "when token is not Bearer" do
+      let(:method) { :get }
+      let(:path)   { "/do-not-skip" }
+      let(:headers) { { "HTTP_AUTHORIZATION" => "Basic abc" } }
+      it "should return false" do
+        expect(@result).to be false
+      end
+    end
   end
 
   describe "#read_token" do
@@ -204,7 +223,7 @@ RSpec.describe Keycloak::Service do
       context "and also in the query string" do
         let(:query_string) { "&authorizationToken=#{query_string_token}" }
         it "returns the query string token" do
-          expect(@token).to eq query_string_token
+          expect(@token).to eq header_token
         end
       end
     end
@@ -226,7 +245,7 @@ RSpec.describe Keycloak::Service do
       context "but in the query string" do
         let(:query_string) { "&authorizationToken=#{query_string_token}" }
         it "returns the query string token" do
-          expect(@token).to eq query_string_token
+          expect(@token).to eq ""
         end
       end
     end

@@ -52,13 +52,6 @@ module Keycloak
       env[ROLES_KEY]
     end
 
-    def self.read_token_from_query_string(uri)
-      parsed_uri         = URI.parse(uri)
-      query              = URI.decode_www_form(parsed_uri.query || "")
-      query_string_token = query.detect { |param| param.first == QUERY_STRING_TOKEN_KEY }
-      query_string_token&.second
-    end
-
     def self.create_url_with_token(uri, token)
       uri       = URI(uri)
       params    = URI.decode_www_form(uri.query || "").reject { |query_string| query_string.first == QUERY_STRING_TOKEN_KEY }
@@ -68,7 +61,9 @@ module Keycloak
     end
 
     def self.read_token_from_headers(headers)
-      headers["HTTP_AUTHORIZATION"]&.gsub(/^Bearer /, "") || ""
+      token = headers["HTTP_AUTHORIZATION"]&.gsub(/^Bearer /, "") || ""
+      return "" if token == headers["HTTP_AUTHORIZATION"]
+      return token
     end
   end
 end

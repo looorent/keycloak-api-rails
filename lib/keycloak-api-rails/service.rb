@@ -30,11 +30,14 @@ module Keycloak
       raise TokenError.invalid_format(token, e)
     end
 
-    def read_token(uri, headers)
-      Helper.read_token_from_query_string(uri) || Helper.read_token_from_headers(headers)
+    def read_token(query_string, headers)
+      Helper.read_token_from_headers(headers)
     end
 
-    def need_authentication?(method, path, headers)
+    def need_authentication?(method, path, query_string, headers)
+      token = read_token(query_string, headers)
+      return false if token.blank?
+
       !should_skip?(method, path) && !is_preflight?(method, headers)
     end
 
