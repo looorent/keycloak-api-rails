@@ -17,7 +17,6 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency "rails",       ">= 4.2"
   spec.add_dependency "json-jwt",    ">= 1.9.4"
-  spec.add_dependency "rest-client", ">= 2.0.2"
 
   spec.add_development_dependency "rspec",   "3.7.0"
   spec.add_development_dependency "timecop", "0.9.1"
