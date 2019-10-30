@@ -1,11 +1,12 @@
 module Keycloak
   class Helper
-    
+
     CURRENT_USER_ID_KEY     = "keycloak:keycloak_id"
     CURRENT_USER_EMAIL_KEY  = "keycloak:email"
     CURRENT_USER_LOCALE_KEY = "keycloak:locale"
     CURRENT_USER_ATTRIBUTES = "keycloak:attributes"
     ROLES_KEY               = "keycloak:roles"
+    RESOURCE_ROLES_KEY      = "keycloak:resource_roles"
     QUERY_STRING_TOKEN_KEY  = "authorizationToken"
 
     def self.current_user_id(env)
@@ -40,8 +41,19 @@ module Keycloak
       env[ROLES_KEY] = token.dig("realm_access", "roles")
     end
 
+    def self.current_resource_roles(env)
+      env[RESOURCE_ROLES_KEY]
+    end
+
+    def self.assign_resource_roles(env, token)
+      env[RESOURCE_ROLES_KEY] = token.fetch("resource_access", {}).inject({}) do |resource_roles, (name, resource_attributes)|
+        resource_roles[name] = resource_attributes.fetch("roles", [])
+        resource_roles
+      end
+    end
+
     def self.assign_current_user_custom_attributes(env, token, attribute_names)
-      env[CURRENT_USER_ATTRIBUTES] = token.select { |key,value| attribute_names.include?(key) }
+      env[CURRENT_USER_ATTRIBUTES] = token.select { |key, value| attribute_names.include?(key) }
     end
 
     def self.current_user_custom_attributes(env)
