@@ -17,6 +17,14 @@ module Keycloak
       env[CURRENT_USER_ID_KEY] = token["sub"]
     end
 
+    def self.current_authorized_party(env)
+      env[CURRENT_USER_ID_KEY]
+    end
+
+    def self.assign_current_authorized_party(env, token)
+      env[CURRENT_USER_ID_KEY] = token["azp"]
+    end
+
     def self.current_user_email(env)
       env[CURRENT_USER_EMAIL_KEY]
     end
