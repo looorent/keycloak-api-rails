@@ -8,6 +8,7 @@ module Keycloak
     CURRENT_USER_ATTRIBUTES      = "keycloak:attributes"
     ROLES_KEY                    = "keycloak:roles"
     RESOURCE_ROLES_KEY           = "keycloak:resource_roles"
+    TOKEN_KEY                    = "keycloak:token"
     QUERY_STRING_TOKEN_KEY       = "authorizationToken"
 
     def self.current_user_id(env)
@@ -16,6 +17,14 @@ module Keycloak
 
     def self.assign_current_user_id(env, token)
       env[CURRENT_USER_ID_KEY] = token["sub"]
+    end
+
+    def self.keycloak_token(env)
+      env[TOKEN_KEY]
+    end
+
+    def self.assign_keycloak_token(env, token)
+      env[TOKEN_KEY] = token
     end
 
     def self.current_authorized_party(env)

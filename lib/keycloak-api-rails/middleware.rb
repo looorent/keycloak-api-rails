@@ -36,6 +36,7 @@ module Keycloak
       Helper.assign_current_user_custom_attributes(env, decoded_token, config.custom_attributes)
       Helper.assign_realm_roles(env, decoded_token)
       Helper.assign_resource_roles(env, decoded_token)
+      Helper.assign_keycloak_token(env, decoded_token)
       @app.call(env)
     end
 

@@ -5,7 +5,7 @@ This gem aims at validates Keycloak JWT token in Ruby On Rails APIs.
 ## Install
 
 ```ruby
-gem "keycloak-api-rails", "0.10.2"
+gem "keycloak-api-rails", "0.11.0"
 ```
 
 ## Token validation
@@ -173,4 +173,4 @@ From the `keycloak-rails-api` directory:
 
 ## Next developments
 
-* Remove dependency to `rest-client`
+* Manage multiple realms
