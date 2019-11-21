@@ -1,13 +1,14 @@
 module Keycloak
   class Helper
 
-    CURRENT_USER_ID_KEY     = "keycloak:keycloak_id"
-    CURRENT_USER_EMAIL_KEY  = "keycloak:email"
-    CURRENT_USER_LOCALE_KEY = "keycloak:locale"
-    CURRENT_USER_ATTRIBUTES = "keycloak:attributes"
-    ROLES_KEY               = "keycloak:roles"
-    RESOURCE_ROLES_KEY      = "keycloak:resource_roles"
-    QUERY_STRING_TOKEN_KEY  = "authorizationToken"
+    CURRENT_USER_ID_KEY          = "keycloak:keycloak_id"
+    CURRENT_AUTHORIZED_PARTY_KEY = "keycloak:authorized_party"
+    CURRENT_USER_EMAIL_KEY       = "keycloak:email"
+    CURRENT_USER_LOCALE_KEY      = "keycloak:locale"
+    CURRENT_USER_ATTRIBUTES      = "keycloak:attributes"
+    ROLES_KEY                    = "keycloak:roles"
+    RESOURCE_ROLES_KEY           = "keycloak:resource_roles"
+    QUERY_STRING_TOKEN_KEY       = "authorizationToken"
 
     def self.current_user_id(env)
       env[CURRENT_USER_ID_KEY]
@@ -18,11 +19,11 @@ module Keycloak
     end
 
     def self.current_authorized_party(env)
-      env[CURRENT_USER_ID_KEY]
+      env[CURRENT_AUTHORIZED_PARTY_KEY]
     end
 
     def self.assign_current_authorized_party(env, token)
-      env[CURRENT_USER_ID_KEY] = token["azp"]
+      env[CURRENT_AUTHORIZED_PARTY_KEY] = token["azp"]
     end
 
     def self.current_user_email(env)
