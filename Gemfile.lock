@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    keycloak-api-rails (0.11.0)
+    keycloak-api-rails (0.11.1)
       json-jwt (>= 1.11.0)
       rails (>= 4.2)
 
@@ -79,7 +79,7 @@ GEM
       activesupport (>= 4.2)
       aes_key_wrap
       bindata
-    loofah (2.3.1)
+    loofah (2.4.0)
       crass (~> 1.0.2)
       nokogiri (>= 1.5.9)
     mail (2.7.1)

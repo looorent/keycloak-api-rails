@@ -24,7 +24,7 @@ module Keycloak
     end
 
     def authentication_failed(message)
-      logger.warn(message)
+      logger.info(message)
       [401, {"Content-Type" => "application/json"}, [ { error: message }.to_json]]
     end
 
