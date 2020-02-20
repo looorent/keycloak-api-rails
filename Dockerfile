@@ -1,4 +1,4 @@
-FROM ruby:2.4
+FROM ruby:2.5.0
 RUN mkdir -p /usr/src/app/lib/keycloak-api-rails
 WORKDIR /usr/src/app
 

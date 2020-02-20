@@ -32,16 +32,19 @@ module Keycloak
     end
 
     def authentication_failed(message)
-      logger.warn(message)
+      logger.info(message)
       [401, {"Content-Type" => "application/json"}, [ { error: message }.to_json]]
     end
 
     def authentication_succeeded(env, decoded_token)
       Helper.assign_current_user_id(env, decoded_token)
+      Helper.assign_current_authorized_party(env, decoded_token)
       Helper.assign_current_user_email(env, decoded_token)
       Helper.assign_current_user_locale(env, decoded_token)
       Helper.assign_current_user_custom_attributes(env, decoded_token, config.custom_attributes)
       Helper.assign_realm_roles(env, decoded_token)
+      Helper.assign_resource_roles(env, decoded_token)
+      Helper.assign_keycloak_token(env, decoded_token)
       @app.call(env)
     end
 

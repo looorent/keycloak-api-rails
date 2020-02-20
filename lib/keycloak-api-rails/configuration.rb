@@ -8,5 +8,6 @@ module Keycloak
     config_accessor :public_key_cache_ttl
     config_accessor :custom_attributes
     config_accessor :logger
+    config_accessor :ca_certificate_file
   end
 end
