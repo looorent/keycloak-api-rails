@@ -5,7 +5,7 @@ This gem aims at validates Keycloak JWT token in Ruby On Rails APIs.
 ## Install
 
 ```ruby
-gem "keycloak-api-rails", "0.10.2"
+gem "keycloak-api-rails", "0.11.1"
 ```
 
 ## Token validation
@@ -14,7 +14,7 @@ Tokens send (through query strings or Authorization headers) to this Railtie Mid
 
 ## Pass token to the API
 
-* Method 1: By adding an `Authorization` HTTP Header with its value set to `Bearer <your token>`. 
+* Method 1: By adding an `Authorization` HTTP Header with its value set to `Bearer <your token>`.
   _e.g_ using curl: `curl -H "Authorization: Bearer <your-token>" https://api.pouet.io/api/more-pouets`
 * Method 2: By providing the token via query string, especially via the parameter named `authorizationToken`. Keep in mind that this method is less secure (url are kept intact in your browser history, and so on...)
   _e.g._ using curl: `curl https://api.pouet.io/api/more-pouets?authorizationToken<your-token>`
@@ -42,8 +42,8 @@ All options have a default value. However, all of them can be changed in your in
 | `token_expiration_tolerance_in_seconds` | `10`| Logger | Optional | Number of seconds a token can expire before being rejected by the API. | `15` | 
 | `public_key_cache_ttl` | `86400`| Integer | Optional | Amount of time, in seconds, specifying maximum interval between two requests to {project_name} to retrieve new public keys. It is 86400 seconds (1 day) by default. At least once per this configured interval (1 day by default) will be new public key always downloaded. | `Rails.logger` | 
 | `custom_attributes` | `[]`| Array Of String | Optional | List of token attributes to read from each token and to add to their http request env | `["originalFirstName", "originalLastName"]` | 
-
-## Configure it 
+| `ca_certificate_file` | `nil`| String | Optional | Path to the certificate authority used to validate the Keycloak server certificate | `/credentials/production_root_ca_cert.pem` | 
+## Configure it
 
 Create a `keycloak.rb` file in your Rails `config/initializers` folder. For instance:
 
@@ -65,7 +65,7 @@ Once this gem is configured in your Rails project, you can read, validate and us
 
 ### Keycloak Id
 
-If you identify users using their Keycloak Id, this value can be read from your controllers using `Keycloak::Helper.current_user_id(request.env)`. 
+If you identify users using their Keycloak Id, this value can be read from your controllers using `Keycloak::Helper.current_user_id(request.env)`.
 
 ```ruby
 class AuthenticatedController < ApplicationController
@@ -173,4 +173,4 @@ From the `keycloak-rails-api` directory:
 
 ## Next developments
 
-* Remove dependency to `rest-client`
+* Manage multiple realms
