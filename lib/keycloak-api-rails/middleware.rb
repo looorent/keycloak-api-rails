@@ -28,7 +28,13 @@ module Keycloak
         @app.call(env)
       end
     rescue TokenError => e
-      authentication_failed(e.message)
+      # authentication_failed(e.message)
+
+      # WTS-881 added failed msg to be captured by controller
+      # to make sure the logger to log the request and got shipped to datadog
+      # continue the request
+      env[:identity_auth_error_message] = e.message
+      @app.call(env)
     end
 
     def authentication_failed(message)
