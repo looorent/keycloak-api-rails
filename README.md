@@ -1,16 +1,16 @@
 # Keycloak-Rails-Api
 
-This gem aims at validates Keycloak JWT token in Ruby On Rails APIs.
+This gem validates Keycloak JWT token for Ruby On Rails APIs.
 
 ## Install
 
 ```ruby
-gem "keycloak-api-rails", "0.11.1"
+gem "keycloak-api-rails", "0.12.0"
 ```
 
 ## Token validation
 
-Tokens send (through query strings or Authorization headers) to this Railtie Middleware are validated against a Keycloak public key. This public key is downloaded every day by default (this interval can be changed through `public_key_cache_ttl`).
+Tokens sent (through query strings or Authorization headers) are validated against a Keycloak public key. This public key is downloaded every day by default (this interval can be changed through `public_key_cache_ttl`).
 
 ## Pass token to the API
 
@@ -20,6 +20,20 @@ Tokens send (through query strings or Authorization headers) to this Railtie Mid
   _e.g._ using curl: `curl https://api.pouet.io/api/more-pouets?authorizationToken<your-token>`
 
 _If both method are used at the same time, The query string as a higher priority when reading given tokens._
+
+## Opt-in vs. Opt-out validation
+
+By default, Keycloak-api-rails installs as a Rack Middleware. It processes all requests before any application logic. URIs/Paths can be excluded (opted-out) from this validation using the 'skip_paths' config option
+
+Alternatively, it can be configured to `opt-in` to validation. In this case, no Rack middleware is used, and controllers can request (opt-in) by including the module `Keycloak::authentication` and calling `keycloak_authenticate`, for example in a `before_action`, like so: 
+
+```ruby
+class MyApiController < ActionController::Base
+  include Keycloak::Authentication
+
+  before_action :keycloak_authenticate
+end
+```
 
 ## When a token is validated
 
@@ -39,6 +53,7 @@ All options have a default value. However, all of them can be changed in your in
 | `realm_id` | `nil`| String | Required | Realm's name (not id, actually) | `master` |
 | `logger` | `Logger.new(STDOUT)`| Logger | Optional | The logger used by `keycloak-api-rails` | `Rails.logger` | 
 | `skip_paths` | `{}`| Hash of methods and paths regexp | Optional | Paths whose the token must not be validatefd | `{ get: [/^\/health\/.+/] }`| 
+| `opt_in` | `false` | Boolean | Optional | When true, All requests will be validated (excluding requests matching `skip_paths`). When false, validation must be explicitly requested | `true`
 | `token_expiration_tolerance_in_seconds` | `10`| Logger | Optional | Number of seconds a token can expire before being rejected by the API. | `15` | 
 | `public_key_cache_ttl` | `86400`| Integer | Optional | Amount of time, in seconds, specifying maximum interval between two requests to {project_name} to retrieve new public keys. It is 86400 seconds (1 day) by default. At least once per this configured interval (1 day by default) will be new public key always downloaded. | `Rails.logger` | 
 | `custom_attributes` | `[]`| Array Of String | Optional | List of token attributes to read from each token and to add to their http request env | `["originalFirstName", "originalLastName"]` | 
@@ -59,6 +74,19 @@ Keycloak.configure do |config|
 end
 ```
 
+Or using opt-in configuration:
+
+```ruby
+Keycloak.configure do |config|
+  config.server_url = ENV["KEYCLOAK_SERVER_URL"]
+  config.realm_id   = ENV["KEYCLOAK_REALM_ID"]
+  config.logger     = Rails.logger
+  config.opt_in     = true
+end
+```
+
+When using `opt-in` is true, `skip_paths` is not used. 
+
 ## Use cases
 
 Once this gem is configured in your Rails project, you can read, validate and use tokens in your controllers.
@@ -73,6 +101,24 @@ class AuthenticatedController < ApplicationController
   def user
     keycloak_id = Keycloak::Helper.current_user_id(request.env)
     User.active.find_by(keycloak_id: keycloak_id)
+  end
+end
+```
+
+Or if using opt-in mode, the controller can request validation conditionally: 
+```ruby
+class MostlyAuthenticatedController < ApplicationController
+  include Keycloak::Authentication
+
+  before_action :keycloak_authenticate, only: show
+
+  def show
+    keycloak_id = Keycloak::Helper.current_user_id(request.env)
+    User.active.find_by(keycloak_id: keycloak_id)
+  end
+
+  def index 
+    # unauthenticated
   end
 end
 ```
