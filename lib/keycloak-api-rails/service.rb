@@ -4,6 +4,7 @@ module Keycloak
     def initialize(key_resolver)
       @key_resolver                          = key_resolver
       @skip_paths                            = Keycloak.config.skip_paths
+      @opt_in                                = Keycloak.config.opt_in
       @logger                                = Keycloak.config.logger
       @token_expiration_tolerance_in_seconds = Keycloak.config.token_expiration_tolerance_in_seconds
     end
@@ -34,8 +35,8 @@ module Keycloak
       Helper.read_token_from_query_string(uri) || Helper.read_token_from_headers(headers)
     end
 
-    def need_authentication?(method, path, headers)
-      !should_skip?(method, path) && !is_preflight?(method, headers)
+    def need_middleware_authentication?(method, path, headers)
+      !is_preflight?(method, headers) && (!@opt_in && !should_skip?(method, path))
     end
 
     private
