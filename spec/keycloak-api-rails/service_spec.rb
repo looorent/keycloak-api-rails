@@ -103,7 +103,7 @@ RSpec.describe Keycloak::Service do
     end
   end
 
-  describe "#need_authentication?" do
+  describe "#need_middleware_authentication?" do
 
     let(:method)  { nil }
     let(:path)    { nil }
@@ -115,7 +115,7 @@ RSpec.describe Keycloak::Service do
         post:   [/^\/skip/],
         get:    [/^\/skip/]
       }
-      @result = service.need_authentication?(method, path, headers)
+      @result = service.need_middleware_authentication?(method, path, headers)
     end
 
     context "when method is nil" do
@@ -171,6 +171,18 @@ RSpec.describe Keycloak::Service do
       let(:method)  { :options }
       let(:headers) { { "HTTP_ACCESS_CONTROL_REQUEST_METHOD" => ["Authorization"] } }
       let(:path)    { "/do-not-skip" }
+      it "should return false" do
+        expect(@result).to be false
+      end
+    end
+
+    context "when configured as opt_in" do
+      before do
+        Keycloak.config.opt_in = true
+        service2 = Keycloak::Service.new(key_resolver)
+        @result = service2.need_middleware_authentication?(method, path, headers)
+      end
+
       it "should return false" do
         expect(@result).to be false
       end
