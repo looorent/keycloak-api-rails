@@ -235,6 +235,13 @@ RSpec.describe Keycloak::Service do
         end
       end
 
+      context "and query string is nil" do
+        let(:query_string) { nil }
+        it "returns an empty token" do
+          expect(@token).to eq ""
+        end
+      end
+
       context "but in the query string" do
         let(:query_string) { "&authorizationToken=#{query_string_token}" }
         it "returns the query string token" do
