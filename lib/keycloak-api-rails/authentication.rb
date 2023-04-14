@@ -28,7 +28,7 @@ module Keycloak
 
     def authentication_failed(message)
       logger.info(message)
-      render status: :unauthorized, json: { error: "Invalid Token" }
+      render status: :unauthorized, json: { error: message }
     end
 
     def authentication_succeeded(env, decoded_token)
