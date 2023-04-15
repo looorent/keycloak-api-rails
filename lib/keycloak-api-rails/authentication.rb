@@ -28,7 +28,7 @@ module Keycloak
 
     def authentication_failed(message)
       logger.info(message)
-      [401, {"Content-Type" => "application/json"}, [ { error: message }.to_json]]
+      render status: :unauthorized, json: { error: message }
     end
 
     def authentication_succeeded(env, decoded_token)
