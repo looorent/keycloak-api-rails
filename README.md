@@ -220,3 +220,4 @@ From the `keycloak-rails-api` directory:
 ## Next developments
 
 * Manage multiple realms
+* Avoid duplicate code in Keycloak::Middleware and `Keycloak::Authentication`

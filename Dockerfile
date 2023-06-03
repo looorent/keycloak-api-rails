@@ -1,4 +1,4 @@
-FROM ruby:2.7.5-slim-bullseye
+FROM ruby:3.2.2-slim-bullseye
 
 RUN apt-get update -qq && apt-get install -y build-essential git ruby-dev && apt-get clean && \
   mkdir -p /usr/src/app/lib/keycloak-api-rails
