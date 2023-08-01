@@ -12,20 +12,13 @@ module Keycloak
 
     def keycloak_authenticate
       env = request.env
-      method = env["REQUEST_METHOD"]
-      path   = env["PATH_INFO"]
-      uri    = env["REQUEST_URI"]
-
-      Keycloak.logger.debug("Start authentication for #{method} : #{path}")
-      token         = Keycloak.service.read_token(uri, env)
-      decoded_token = Keycloak.service.decode_and_verify(token)
-      authentication_succeeded(env, decoded_token)
+      service = ServiceFactory.from_env(env)
+      service.authenticate!(env)
     rescue TokenError => e
       authentication_failed(e.message)
     end
 
     def authentication_failed(message)
-      Keycloak.logger.info(message)
       render status: :unauthorized, json: { error: message }
     end
 
