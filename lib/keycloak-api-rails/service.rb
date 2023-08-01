@@ -1,12 +1,26 @@
 module Keycloak
   class Service
-    
-    def initialize(key_resolver)
+    def initialize(key_resolver, config)
       @key_resolver                          = key_resolver
-      @skip_paths                            = Keycloak.config.skip_paths
-      @opt_in                                = Keycloak.config.opt_in
-      @logger                                = Keycloak.config.logger
-      @token_expiration_tolerance_in_seconds = Keycloak.config.token_expiration_tolerance_in_seconds
+      @skip_paths                            = config.skip_paths
+      @opt_in                                = config.opt_in
+      @logger                                = config.logger
+      @token_expiration_tolerance_in_seconds = config.token_expiration_tolerance_in_seconds
+    end
+
+    def authenticate!(env)
+      method = env["REQUEST_METHOD"]
+      path   = env["PATH_INFO"]
+      uri    = env["REQUEST_URI"]
+      return unless need_middleware_authentication?(method, path, env)
+
+      @logger.debug("Start authentication for #{method} : #{path}")
+      token         = read_token(uri, env)
+      decoded_token = decode_and_verify(token)
+      update_env(env, decoded_token)
+    rescue rescue TokenError => e
+      @logger.info(message)
+      raise
     end
 
     def decode_and_verify(token)
@@ -40,6 +54,17 @@ module Keycloak
     end
 
     private
+
+    def update_env(env, decoded_token)
+      Helper.assign_current_user_id(env, decoded_token)
+      Helper.assign_current_authorized_party(env, decoded_token)
+      Helper.assign_current_user_email(env, decoded_token)
+      Helper.assign_current_user_locale(env, decoded_token)
+      Helper.assign_current_user_custom_attributes(env, decoded_token, config.custom_attributes)
+      Helper.assign_realm_roles(env, decoded_token)
+      Helper.assign_resource_roles(env, decoded_token)
+      Helper.assign_keycloak_token(env, decoded_token)
+    end
 
     def should_skip?(method, path)
       method_symbol = method&.downcase&.to_sym
