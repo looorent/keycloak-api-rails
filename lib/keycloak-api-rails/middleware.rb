@@ -20,11 +20,11 @@ module Keycloak
         @app.call(env)
       end
     rescue TokenError => e
+      logger.debug("The error causing the Token to fail: #{e.original_error&.message || e.message}")
       authentication_failed(e.message)
     end
 
     def authentication_failed(message)
-      logger.info(message)
       [401, {"Content-Type" => "application/json"}, [ { error: message }.to_json]]
     end
 
