@@ -1,8 +1,9 @@
 module Keycloak
   class HTTPClient
-    def initialize(configuration)
+    def initialize(configuration, logger)
       @server_url          = configuration.server_url
       @ca_certificate_file = configuration.ca_certificate_file
+      @logger              = logger
       @x509_store          = OpenSSL::X509::Store.new
       @x509_store.set_default_paths
       @x509_store.add_file(@ca_certificate_file) if @ca_certificate_file
@@ -14,7 +15,13 @@ module Keycloak
       Net::HTTP.start(uri.host, uri.port, :use_ssl => use_ssl, :cert_store => @x509_store) do |http|
         request  = Net::HTTP::Get.new(uri)
         response = http.request(request)
-        JSON.parse(response.body)
+        
+        begin
+          response.value
+          JSON.parse(response.body)
+        rescue
+          @logger.error("Keycloak responded with an error when calling '#{path}'. Status #{response.code}. Payload: #{response.body}")
+        end
       end
     end
 

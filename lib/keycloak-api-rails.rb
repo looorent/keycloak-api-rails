@@ -26,7 +26,7 @@ module Keycloak
   end
 
   def self.http_client
-    @http_client ||= Keycloak::HTTPClient.new(config)
+    @http_client ||= Keycloak::HTTPClient.new(config, logger)
   end
 
   def self.public_key_resolver
