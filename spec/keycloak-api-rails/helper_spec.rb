@@ -1,11 +1,11 @@
-RSpec.describe Keycloak::Helper do
+RSpec.describe KeycloakApiRails::Helper do
   describe "#create_url_with_token" do
 
     let(:uri)   { "http://www.an-url.io" }
     let(:token) { "aToken" }
 
     before(:each) do
-      @url_with_token = Keycloak::Helper.create_url_with_token(uri, token)
+      @url_with_token = KeycloakApiRails::Helper.create_url_with_token(uri, token)
     end
 
     context "when the uri has no query string yet" do

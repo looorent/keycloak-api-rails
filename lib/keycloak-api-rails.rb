@@ -15,10 +15,10 @@ require_relative "keycloak-api-rails/service"
 require_relative "keycloak-api-rails/middleware"
 require_relative "keycloak-api-rails/railtie" if defined?(Rails)
 
-module Keycloak
+module KeycloakApiRails
 
   def self.configure
-    yield @configuration ||= Keycloak::Configuration.new
+    yield @configuration ||= KeycloakApiRails::Configuration.new
   end
 
   def self.config
@@ -26,7 +26,7 @@ module Keycloak
   end
 
   def self.http_client
-    @http_client ||= Keycloak::HTTPClient.new(config, logger)
+    @http_client ||= KeycloakApiRails::HTTPClient.new(config, logger)
   end
 
   def self.public_key_resolver
@@ -34,7 +34,7 @@ module Keycloak
   end
 
   def self.service
-    @service ||= Keycloak::Service.new(public_key_resolver)
+    @service ||= KeycloakApiRails::Service.new(public_key_resolver)
   end
 
   def self.logger
