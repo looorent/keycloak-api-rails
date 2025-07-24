@@ -1,4 +1,4 @@
-module Keycloak
+module KeycloakApiRails
   class Configuration
     include ActiveSupport::Configurable
     config_accessor :server_url

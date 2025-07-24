@@ -1,4 +1,4 @@
-module Keycloak
+module KeycloakApiRails
   class Helper
 
     CURRENT_USER_ID_KEY          = "keycloak:keycloak_id"

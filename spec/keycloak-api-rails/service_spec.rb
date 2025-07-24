@@ -1,9 +1,9 @@
-RSpec.describe Keycloak::Service do
+RSpec.describe KeycloakApiRails::Service do
 
   let!(:private_key)  { OpenSSL::PKey::RSA.generate(2048) }
   let!(:public_key)   { private_key.public_key }
-  let!(:key_resolver)  { Keycloak::PublicKeyCachedResolverStub.new(public_key) }
-  let!(:service)       { Keycloak::Service.new(key_resolver) }
+  let!(:key_resolver)  { KeycloakApiRails::PublicKeyCachedResolverStub.new(public_key) }
+  let!(:service)       { KeycloakApiRails::Service.new(key_resolver) }
   
   before(:each) do
     now = Time.local(2018, 1, 9, 12, 0, 0)
@@ -17,7 +17,7 @@ RSpec.describe Keycloak::Service do
   describe "#decode_and_verify" do
     def create_token(private_key, expiration_date, algorithm)
       claim = {
-        iss: "Keycloak",
+        iss: "KeycloakApiRails",
         exp: expiration_date,
         nbf: Time.local(2018, 1, 1, 0, 0, 0)
       }
@@ -111,7 +111,7 @@ RSpec.describe Keycloak::Service do
 
 
     before(:each) do
-      Keycloak.config.skip_paths = {
+      KeycloakApiRails.config.skip_paths = {
         post:   [/^\/skip/],
         get:    [/^\/skip/]
       }
@@ -178,8 +178,8 @@ RSpec.describe Keycloak::Service do
 
     context "when configured as opt_in" do
       before do
-        Keycloak.config.opt_in = true
-        service2 = Keycloak::Service.new(key_resolver)
+        KeycloakApiRails.config.opt_in = true
+        service2 = KeycloakApiRails::Service.new(key_resolver)
         @result = service2.need_middleware_authentication?(method, path, headers)
       end
 
