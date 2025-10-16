@@ -25,7 +25,7 @@ module KeycloakApiRails
     end
 
     def authentication_failed(message)
-      [401, {"Content-Type" => "application/json"}, [ { error: message }.to_json]]
+      [401, {"Content-Type" => "application/json"}, [ { error: I18n.t(message) }.to_json]]
     end
 
     def authentication_succeeded(env, decoded_token)
