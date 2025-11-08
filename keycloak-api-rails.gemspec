@@ -18,7 +18,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "rails",       ">= 4.2"
   spec.add_dependency "json-jwt",    ">= 1.11.0"
 
-  spec.add_development_dependency "rspec",   "3.12.0"
-  spec.add_development_dependency "timecop", "0.9.6"
-  spec.add_development_dependency "byebug", "11.1.3"
+  spec.add_development_dependency "rspec",   "3.13.2"
+  spec.add_development_dependency "timecop", "0.9.10"
+  spec.add_development_dependency "byebug", "12.0.0"
 end
