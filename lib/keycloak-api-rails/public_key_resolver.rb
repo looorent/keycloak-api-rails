@@ -1,4 +1,4 @@
-module Keycloak
+module KeycloakApiRails
   class PublicKeyResolver
     def initialize(http_client, realm_id)
       @realm_id    = realm_id

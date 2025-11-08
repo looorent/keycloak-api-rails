@@ -1,12 +1,12 @@
-RSpec.describe Keycloak::Service do
+RSpec.describe KeycloakApiRails::Service do
 
   let(:public_key_cache_ttl)  { 86400 }
   let(:server_url)            { "whatever:8080" }
   let(:realm_id)              { "pouet" }
-  let!(:resolver)             { Keycloak::PublicKeyCachedResolver.new(server_url, realm_id, public_key_cache_ttl) }
+  let!(:resolver)             { KeycloakApiRails::PublicKeyCachedResolver.new(server_url, realm_id, public_key_cache_ttl) }
 
   before(:each) do
-    resolver.instance_variable_set(:@resolver, Keycloak::PublicKeyResolverStub.new)
+    resolver.instance_variable_set(:@resolver, KeycloakApiRails::PublicKeyResolverStub.new)
     now = Time.local(2018, 1, 9, 12, 0, 0)
     Timecop.freeze(now)
   end

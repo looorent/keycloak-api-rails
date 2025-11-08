@@ -4,7 +4,7 @@ require "keycloak-api-rails/version"
 
 Gem::Specification.new do |spec|
   spec.name        = "keycloak-api-rails"
-  spec.version     = Keycloak::VERSION
+  spec.version     = KeycloakApiRails::VERSION
   spec.authors     = ["Lorent Lempereur"]
   spec.email       = ["lorent.lempereur.dev@gmail.com"]
   spec.homepage    = "https://github.com/looorent/keycloak-api-rails"

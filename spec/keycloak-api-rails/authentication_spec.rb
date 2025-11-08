@@ -1,10 +1,10 @@
 require "spec_helper"
 
-describe Keycloak::Authentication do
+describe KeycloakApiRails::Authentication do
   class ExampleController < ActionController::Base
-    include Keycloak::Authentication
+    include KeycloakApiRails::Authentication
     # Mark protected methods public so they may be called in tests
-    public(*Keycloak::Authentication.protected_instance_methods)
+    public(*KeycloakApiRails::Authentication.protected_instance_methods)
   end
 
   let(:controller) { ExampleController.new }
@@ -24,7 +24,7 @@ describe Keycloak::Authentication do
     end
 
     it "it authenticates with request header" do
-      expect_any_instance_of(Keycloak::Service).to receive(:decode_and_verify).with(token).and_return("A User")
+      expect_any_instance_of(KeycloakApiRails::Service).to receive(:decode_and_verify).with(token).and_return("A User")
       expect(controller).to receive(:authentication_succeeded)
       controller.keycloak_authenticate
     end

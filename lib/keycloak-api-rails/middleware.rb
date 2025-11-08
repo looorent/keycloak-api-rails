@@ -1,4 +1,4 @@
-module Keycloak
+module KeycloakApiRails
 
   class Middleware
     def initialize(app)
@@ -25,7 +25,7 @@ module Keycloak
     end
 
     def authentication_failed(message)
-      [401, {"Content-Type" => "application/json"}, [ { error: message }.to_json]]
+      [401, {"Content-Type" => "application/json"}, [ { error: I18n.t(message) }.to_json]]
     end
 
     def authentication_succeeded(env, decoded_token)
@@ -41,15 +41,15 @@ module Keycloak
     end
 
     def service
-      Keycloak.service
+      KeycloakApiRails.service
     end
 
     def logger
-      Keycloak.logger
+      KeycloakApiRails.logger
     end
 
     def config
-      Keycloak.config
+      KeycloakApiRails.config
     end
   end
 end
