@@ -1,4 +1,4 @@
-module Keycloak
+module KeycloakApiRails
   class PublicKeyCachedResolver
     attr_reader :cached_public_key_retrieved_at
 

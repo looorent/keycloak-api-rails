@@ -1,4 +1,4 @@
-module Keycloak
+module KeycloakApiRails
 
   class Middleware
     def initialize(app)
@@ -41,15 +41,15 @@ module Keycloak
     end
 
     def service
-      Keycloak.service
+      KeycloakApiRails.service
     end
 
     def logger
-      Keycloak.logger
+      KeycloakApiRails.logger
     end
 
     def config
-      Keycloak.config
+      KeycloakApiRails.config
     end
   end
 end

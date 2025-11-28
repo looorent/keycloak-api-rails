@@ -1,4 +1,4 @@
-module Keycloak
+module KeycloakApiRails
   class HTTPClient
     def initialize(configuration, logger)
       @server_url          = configuration.server_url
@@ -20,7 +20,7 @@ module Keycloak
           response.value
           JSON.parse(response.body)
         rescue
-          @logger.error("Keycloak responded with an error when calling '#{path}'. Status #{response.code}. Payload: #{response.body}")
+          @logger.error("KeycloakApiRails responded with an error when calling '#{path}'. Status #{response.code}. Payload: #{response.body}")
         end
       end
     end
