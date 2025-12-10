@@ -1,12 +1,12 @@
-module Keycloak
+module KeycloakApiRails
   class Service
     
     def initialize(key_resolver)
       @key_resolver                          = key_resolver
-      @skip_paths                            = Keycloak.config.skip_paths
-      @opt_in                                = Keycloak.config.opt_in
-      @logger                                = Keycloak.config.logger
-      @token_expiration_tolerance_in_seconds = Keycloak.config.token_expiration_tolerance_in_seconds
+      @skip_paths                            = KeycloakApiRails.config.skip_paths
+      @opt_in                                = KeycloakApiRails.config.opt_in
+      @logger                                = KeycloakApiRails.config.logger
+      @token_expiration_tolerance_in_seconds = KeycloakApiRails.config.token_expiration_tolerance_in_seconds
     end
 
     def decode_and_verify(token)

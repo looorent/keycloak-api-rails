@@ -1,4 +1,4 @@
-module Keycloak
+module KeycloakApiRails
   class PublicKeyResolverStub
     def find_public_keys
       OpenSSL::PKey::RSA.generate(1024).public_key
