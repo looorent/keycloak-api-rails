@@ -5,7 +5,7 @@ This gem validates Keycloak JWT token for Ruby On Rails APIs.
 ## Install
 
 ```ruby
-gem "keycloak-api-rails", "0.12.4"
+gem "keycloak-api-rails", "1.0.0"
 ```
 
 ## Token validation
@@ -25,11 +25,11 @@ _If both method are used at the same time, The query string as a higher priority
 
 By default, Keycloak-api-rails installs as a Rack Middleware. It processes all requests before any application logic. URIs/Paths can be excluded (opted-out) from this validation using the 'skip_paths' config option
 
-Alternatively, it can be configured to `opt-in` to validation. In this case, no Rack middleware is used, and controllers can request (opt-in) by including the module `Keycloak::authentication` and calling `keycloak_authenticate`, for example in a `before_action`, like so: 
+Alternatively, it can be configured to `opt-in` to validation. In this case, no Rack middleware is used, and controllers can request (opt-in) by including the module `KeycloakApiRails::authentication` and calling `keycloak_authenticate`, for example in a `before_action`, like so: 
 
 ```ruby
 class MyApiController < ActionController::Base
-  include Keycloak::Authentication
+  include KeycloakApiRails::Authentication
 
   before_action :keycloak_authenticate
 end
@@ -41,7 +41,7 @@ In Rails controller, the request `env` variables has two more properties:
 * `keycloak:keycloak_id`
 * `keycloak:roles`
 
-They can be accessed using `Keycloak::Helper` methods.
+They can be accessed using `KeycloakApiRails::Helper` methods.
 
 ## Overall configuration options
 
@@ -63,7 +63,7 @@ All options have a default value. However, all of them can be changed in your in
 Create a `keycloak.rb` file in your Rails `config/initializers` folder. For instance:
 
 ```
-Keycloak.configure do |config|
+KeycloakApiRails.configure do |config|
   config.server_url = ENV["KEYCLOAK_SERVER_URL"]
   config.realm_id   = ENV["KEYCLOAK_REALM_ID"]
   config.logger     = Rails.logger
@@ -77,7 +77,7 @@ end
 Or using opt-in configuration:
 
 ```ruby
-Keycloak.configure do |config|
+KeycloakApiRails.configure do |config|
   config.server_url = ENV["KEYCLOAK_SERVER_URL"]
   config.realm_id   = ENV["KEYCLOAK_REALM_ID"]
   config.logger     = Rails.logger
@@ -93,13 +93,13 @@ Once this gem is configured in your Rails project, you can read, validate and us
 
 ### Keycloak Id
 
-If you identify users using their Keycloak Id, this value can be read from your controllers using `Keycloak::Helper.current_user_id(request.env)`.
+If you identify users using their Keycloak Id, this value can be read from your controllers using `KeycloakApiRails::Helper.current_user_id(request.env)`.
 
 ```ruby
 class AuthenticatedController < ApplicationController
 
   def user
-    keycloak_id = Keycloak::Helper.current_user_id(request.env)
+    keycloak_id = KeycloakApiRails::Helper.current_user_id(request.env)
     User.active.find_by(keycloak_id: keycloak_id)
   end
 end
@@ -108,12 +108,12 @@ end
 Or if using opt-in mode, the controller can request validation conditionally: 
 ```ruby
 class MostlyAuthenticatedController < ApplicationController
-  include Keycloak::Authentication
+  include KeycloakApiRails::Authentication
 
   before_action :keycloak_authenticate, only: show
 
   def show
-    keycloak_id = Keycloak::Helper.current_user_id(request.env)
+    keycloak_id = KeycloakApiRails::Helper.current_user_id(request.env)
     User.active.find_by(keycloak_id: keycloak_id)
   end
 
@@ -125,7 +125,7 @@ end
 
 ### Roles
 
-`Keycloak::Helper.current_user_roles` can be use against a Rails request to read user's roles.
+`KeycloakApiRails::Helper.current_user_roles` can be use against a Rails request to read user's roles.
 
 For example, a controller can require users to be administrator (considering you defined an `application-admin` role):
 
@@ -143,18 +143,18 @@ class AdminController < ApplicationController
   private
 
   def current_user_roles
-    Keycloak::Helper.current_user_roles(request.env)
+    KeycloakApiRails::Helper.current_user_roles(request.env)
   end
 end
 ```
 
 ### Create an URL where the token must be passed via query string
 
-`Keycloak::Helper.create_url_with_token` method can be used to build an url from another, by adding a token as query string.
+`KeycloakApiRails::Helper.create_url_with_token` method can be used to build an url from another, by adding a token as query string.
 
 ```ruby
 def example
-  Keycloak::Helper.create_url_with_token("https://api.pouet.io/api/more-pouets", "myToken")
+  KeycloakApiRails::Helper.create_url_with_token("https://api.pouet.io/api/more-pouets", "myToken")
 end
 ```
 
@@ -163,14 +163,14 @@ This should output `https://api.pouet.io/api/more-pouets?authorizationToken=myTo
 
 ### Accessing Keycloak Service
 
-A lazy-loaded service Keycloak::Service can be accessed using `Keycloak.service`.
+A lazy-loaded service KeycloakApiRails::Service can be accessed using `KeycloakApiRails.service`.
 For instance, to read a provided token:
 ```ruby
 class RenderTokenController < ApplicationController
   def show
     uri     = request.env["REQUEST_URI"]
     headers = request.env
-    token   = Keycloak.service.read_token(uri, headers)
+    token   = KeycloakApiRails.service.read_token(uri, headers)
     render json: { token: token }, status: :ok
   end
 end
@@ -200,10 +200,10 @@ let(:jwt) do
   token.sign($private_key, :RS256).to_s
 end
 ```
-* Finally, in the same `shared_context`, stub `Keycloak.public_key_resolver` to use a valid public key that is able to validate `jwt`:
+* Finally, in the same `shared_context`, stub `KeycloakApiRails.public_key_resolver` to use a valid public key that is able to validate `jwt`:
 ```ruby
 before(:each) do
-  public_key_resolver = Keycloak.public_key_resolver
+  public_key_resolver = KeycloakApiRails.public_key_resolver
   allow(public_key_resolver).to receive(:find_public_keys) { JSON::JWK::Set.new(JSON::JWK.new($private_key, kid: "default")) }
 end
 ```
@@ -216,8 +216,8 @@ From the `keycloak-rails-api` directory:
   $ docker build . -t keycloak-rails-api:test
   $ docker run -v `pwd`:/usr/src/app/ keycloak-rails-api:test bundle exec rspec spec
 ```
-
+rspe
 ## Next developments
 
 * Manage multiple realms
-* Avoid duplicate code in Keycloak::Middleware and `Keycloak::Authentication`
+* Avoid duplicate code in KeycloakApiRails::Middleware and `KeycloakApiRails::Authentication`
