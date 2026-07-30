@@ -5,7 +5,7 @@ This gem validates Keycloak JWT token for Ruby On Rails APIs.
 ## Install
 
 ```ruby
-gem "keycloak-api-rails", "1.0.0"
+gem "keycloak-api-rails", "1.0.1"
 ```
 
 ## Token validation
@@ -216,7 +216,7 @@ From the `keycloak-rails-api` directory:
   $ docker build . -t keycloak-rails-api:test
   $ docker run -v `pwd`:/usr/src/app/ keycloak-rails-api:test bundle exec rspec spec
 ```
-rspe
+
 ## Next developments
 
 * Manage multiple realms
