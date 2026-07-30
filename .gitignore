@@ -3,6 +3,6 @@ log/*.log
 .byebug_history
 *.gem
 # This gem supports several Ruby versions, each of them resolving a different set of
-# dependencies (Ruby 3.1 caps Rails to 7.2, Ruby 3.2+ resolves Rails 8.1). A single
-# committed lockfile cannot satisfy all of them.
+# dependencies (Ruby 2.7 caps Rails to 7.1, Ruby 3.1 to 7.2, Ruby 3.2+ resolves Rails 8.1).
+# A single committed lockfile cannot satisfy all of them.
 Gemfile.lock

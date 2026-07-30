@@ -2,6 +2,19 @@
 
 This gem validates Keycloak JWT token for Ruby On Rails APIs.
 
+## Requirements
+
+* Ruby `>= 2.7`
+* Rails `>= 4.2`
+
+Every push is tested against Ruby 2.7, 3.0, 3.1, 3.2, 3.3, 3.4 and 4.0. Each of them installs the
+most recent dependencies it supports, so the test suite runs against Rails 7.1 (Ruby 2.7 and 3.0),
+Rails 7.2 (Ruby 3.1) and Rails 8.1 (Ruby 3.2 and above).
+
+Ruby 2.7 and 3.0 reached their end of life and no longer receive security fixes. They are supported
+here so that applications running on Rails 7.0 and 7.1 can use this gem, but upgrading Ruby remains
+the recommended path.
+
 ## Install
 
 ```ruby

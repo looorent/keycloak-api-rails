@@ -10,7 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Dependencies: Upgrade test dependency `timecop` to `0.9.11`
 * Upgrade Docker image to Ruby 3.4
 * Remove all usages of `ActiveSupport` from the library, replaced by plain Ruby
-* Support Ruby 3.1, 3.2, 3.3 and 3.4: declare `required_ruby_version >= 3.1` and stop committing `Gemfile.lock`, so that each Ruby version resolves the dependencies it supports (Rails 7.2 on Ruby 3.1, Rails 8.1 on Ruby 3.2+)
+* Support Ruby 2.7 up to 4.0: declare `required_ruby_version >= 2.7` and stop committing `Gemfile.lock`, so that each Ruby version resolves the dependencies it supports (Rails 7.1 on Ruby 2.7 and 3.0, Rails 7.2 on Ruby 3.1, Rails 8.1 on Ruby 3.2 and above)
+* Test dependency `byebug` is no longer pinned to an exact version, since byebug 12 requires Ruby 3.1
 
 ## [1.0.0] - 2025-12-10
 

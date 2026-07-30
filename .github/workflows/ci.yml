@@ -12,12 +12,17 @@ permissions:
 jobs:
   test:
     name: Ruby ${{ matrix.ruby-version }}
-    runs-on: ubuntu-latest
+    # Pinned rather than 'ubuntu-latest': ruby/setup-ruby has no prebuilt Rubies for
+    # ubuntu-26.04 yet, so the oldest versions of the matrix would break once the
+    # 'latest' alias moves on.
+    runs-on: ubuntu-24.04
 
     strategy:
       fail-fast: false
       matrix:
-        ruby-version: ['3.1', '3.2', '3.3', '3.4', '4.0']
+        # Each version resolves the newest dependencies it supports: Rails 7.1 on Ruby 2.7
+        # and 3.0, Rails 7.2 on Ruby 3.1, Rails 8.1 on Ruby 3.2 and above.
+        ruby-version: ['2.7', '3.0', '3.1', '3.2', '3.3', '3.4', '4.0']
 
     steps:
     - uses: actions/checkout@v4

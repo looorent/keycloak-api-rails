@@ -15,12 +15,14 @@ Gem::Specification.new do |spec|
   spec.files = `git ls-files -z`.split("\x0")
   spec.require_paths = ["lib"]
 
-  spec.required_ruby_version = ">= 3.1"
+  spec.required_ruby_version = ">= 2.7"
 
   spec.add_dependency "rails",       ">= 4.2"
   spec.add_dependency "json-jwt",    ">= 1.11.0"
 
   spec.add_development_dependency "rspec",   "3.13.2"
   spec.add_development_dependency "timecop", "0.9.11"
-  spec.add_development_dependency "byebug", "12.0.0"
+  # Not pinned to an exact version: byebug 12 requires Ruby >= 3.1, byebug 13 requires Ruby >= 3.2.
+  # Older Rubies resolve to byebug 11.
+  spec.add_development_dependency "byebug", ">= 11.1.3"
 end
