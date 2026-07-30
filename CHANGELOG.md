@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * Dependencies: Upgrade test dependency `timecop` to `0.9.11`
 * Upgrade Docker image to Ruby 3.4
+* Remove all usages of `ActiveSupport` from the library, replaced by plain Ruby
 
 ## [1.0.0] - 2025-12-10
 

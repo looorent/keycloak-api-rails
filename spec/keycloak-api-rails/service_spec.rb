@@ -80,9 +80,31 @@ RSpec.describe KeycloakApiRails::Service do
           end
         end
 
+        # The service reads `token_expiration_tolerance_in_seconds` when it is instantiated:
+        # a token expiring within that tolerance is already considered as expired.
+        context "and token expires within the expiration tolerance" do
+          let(:expiration_date) { Time.now + 5 }
+
+          it "should raise an error :expiration_date" do
+            expect(KeycloakApiRails.config.token_expiration_tolerance_in_seconds).to eq 10
+            expect {
+              service.decode_and_verify(token)
+            }.to raise_error(TokenError, "JWT token is expired")
+          end
+        end
+
+        context "and token expires just after the expiration tolerance" do
+          let(:expiration_date) { Time.now + 30 }
+
+          it "should return a not-nil decoded token" do
+            expect(KeycloakApiRails.config.token_expiration_tolerance_in_seconds).to eq 10
+            expect(service.decode_and_verify(token)).to_not be_nil
+          end
+        end
+
         context "and token is not expired" do
           let(:expiration_date) { Time.now + 2.days }
-          
+
           context "and token is encrypted using RS256" do
             let(:algorithm) { :RS256 }
             

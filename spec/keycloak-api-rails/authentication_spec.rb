@@ -17,6 +17,44 @@ describe KeycloakApiRails::Authentication do
     }
   end
 
+  describe "when included" do
+    it "declares keycloak_authenticate as a helper method when the base class supports helpers" do
+      declared_helper_methods = []
+      base = Class.new do
+        define_singleton_method(:helper_method) { |*names| declared_helper_methods.concat(names) }
+      end
+
+      base.include(KeycloakApiRails::Authentication)
+
+      expect(declared_helper_methods).to eq [:keycloak_authenticate]
+    end
+
+    it "declares the helper method on a real controller" do
+      expect(ExampleController._helper_methods).to include :keycloak_authenticate
+    end
+
+    it "does not fail when the base class does not support helpers" do
+      expect {
+        Class.new.include(KeycloakApiRails::Authentication)
+      }.to_not raise_error
+    end
+
+    it "exposes its methods as protected instance methods" do
+      expect(KeycloakApiRails::Authentication.protected_instance_methods).to match_array %i[
+        keycloak_authenticate
+        authentication_failed
+        authentication_succeeded
+      ]
+    end
+
+    it "does not add any public method to the including class" do
+      base = Class.new.include(KeycloakApiRails::Authentication)
+
+      expect(base.public_instance_methods).to_not include :keycloak_authenticate
+      expect(base.protected_instance_methods).to include :keycloak_authenticate
+    end
+  end
+
   describe "#keycloak_authenticate" do
     before do
       # Mock request object because we aren't using real request spec

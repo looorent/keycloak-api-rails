@@ -53,8 +53,8 @@ module KeycloakApiRails
     end
 
     def expired?(token)
-      token_expiration = Time.at(token["exp"]).to_datetime
-      token_expiration < Time.now + @token_expiration_tolerance_in_seconds.seconds
+      token_expiration = Time.at(token["exp"])
+      token_expiration < Time.now + @token_expiration_tolerance_in_seconds
     end
   end
 end

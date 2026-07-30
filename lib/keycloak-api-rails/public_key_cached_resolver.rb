@@ -24,7 +24,7 @@ module KeycloakApiRails
     private
 
     def public_keys_are_outdated?
-      @cached_public_keys.nil? || @cached_public_key_retrieved_at.nil? || Time.now > (@cached_public_key_retrieved_at + @public_key_cache_ttl.seconds)
+      @cached_public_keys.nil? || @cached_public_key_retrieved_at.nil? || Time.now > (@cached_public_key_retrieved_at + @public_key_cache_ttl)
     end
   end
 end

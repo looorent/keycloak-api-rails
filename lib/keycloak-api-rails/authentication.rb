@@ -1,10 +1,8 @@
 module KeycloakApiRails
   module Authentication
-    extend ActiveSupport::Concern
-
-    included do
-      if respond_to?(:helper_method)
-        helper_method :keycloak_authenticate
+    def self.included(base)
+      if base.respond_to?(:helper_method)
+        base.helper_method :keycloak_authenticate
       end
     end
 

@@ -1,14 +1,13 @@
 module KeycloakApiRails
   class Configuration
-    include ActiveSupport::Configurable
-    config_accessor :server_url
-    config_accessor :realm_id
-    config_accessor :skip_paths
-    config_accessor :opt_in
-    config_accessor :token_expiration_tolerance_in_seconds
-    config_accessor :public_key_cache_ttl
-    config_accessor :custom_attributes
-    config_accessor :logger
-    config_accessor :ca_certificate_file
+    attr_accessor :server_url
+    attr_accessor :realm_id
+    attr_accessor :skip_paths
+    attr_accessor :opt_in
+    attr_accessor :token_expiration_tolerance_in_seconds
+    attr_accessor :public_key_cache_ttl
+    attr_accessor :custom_attributes
+    attr_accessor :logger
+    attr_accessor :ca_certificate_file
   end
 end
