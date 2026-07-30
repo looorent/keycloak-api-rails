@@ -15,6 +15,8 @@ Gem::Specification.new do |spec|
   spec.files = `git ls-files -z`.split("\x0")
   spec.require_paths = ["lib"]
 
+  spec.required_ruby_version = ">= 3.1"
+
   spec.add_dependency "rails",       ">= 4.2"
   spec.add_dependency "json-jwt",    ">= 1.11.0"
 

@@ -6,7 +6,6 @@ RUN apt-get update -qq && apt-get install -y build-essential git ruby-dev && apt
 WORKDIR /usr/src/app
 
 COPY Gemfile /usr/src/app/
-COPY Gemfile.lock /usr/src/app/
 COPY keycloak-api-rails.gemspec /usr/src/app/
 COPY lib/keycloak-api-rails/version.rb /usr/src/app/lib/keycloak-api-rails/
 RUN bundle install
