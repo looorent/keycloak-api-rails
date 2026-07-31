@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+* Gem metadata
+* The published gem no longer ships non-production code
+
+
 ## [1.1.1] - 2026-07-31
 
 * New test helpers, in `keycloak-api-rails/testing`: `KeycloakApiRails::Testing.stub_public_keys!` validates the tokens forged by `keycloak_token` and `keycloak_auth_headers`, so that controller and request tests can be authenticated without a Keycloak server, and without the boilerplate the README used to describe. This file is not loaded by `keycloak-api-rails` and has to be required explicitly
