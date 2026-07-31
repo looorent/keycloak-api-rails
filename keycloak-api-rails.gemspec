@@ -23,12 +23,7 @@ Gem::Specification.new do |spec|
     "rubygems_mfa_required" => "true"
   }
 
-  # Ship the library and its documentation only: the test suite and the
-  # development tooling have no reason to land in the published gem.
-  spec.files = `git ls-files -z`.split("\x0").reject do |file|
-    file.start_with?("spec/", ".github/", ".claude/", ".ruby-lsp/") ||
-      [".gitignore", ".rspec", "Dockerfile", "Gemfile", "Rakefile"].include?(file)
-  end
+  spec.files = Dir.glob(["lib/**/*.rb", "CHANGELOG.md", "MIT-LICENSE", "README.md", "keycloak-api-rails.gemspec"])
   spec.require_paths = ["lib"]
 
   spec.required_ruby_version = ">= 2.7"
