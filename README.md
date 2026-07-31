@@ -18,7 +18,7 @@ the recommended path.
 ## Install
 
 ```ruby
-gem "keycloak-api-rails", "1.1.0"
+gem "keycloak-api-rails", "1.1.1"
 ```
 
 ## Token validation
