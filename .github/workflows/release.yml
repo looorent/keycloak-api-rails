@@ -1,0 +1,52 @@
+name: Release
+
+# Publishing is triggered by pushing a version tag, e.g.:
+#   git tag -a v1.2.0 -m "Version 1.2.0" && git push origin v1.2.0
+#
+# No RubyGems API key is stored in this repository: the gem is pushed through
+# RubyGems' Trusted Publishing, which exchanges a short-lived GitHub OIDC token
+# for a scoped RubyGems credential. This requires a trusted publisher declared on
+# https://rubygems.org/gems/keycloak-api-rails pointing to this repository, this
+# workflow file name and the 'release' environment.
+on:
+  push:
+    tags: [ "v*" ]
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    name: Push gem to RubyGems.org
+    # Pinned rather than 'ubuntu-latest', for the same reason as in ci.yml.
+    runs-on: ubuntu-24.04
+
+    environment: release
+
+    permissions:
+      contents: write # 'rake release' pushes the version tag when it does not exist yet
+      id-token: write # mandatory to request the OIDC token used by trusted publishing
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.4'
+        bundler-cache: true
+
+    - name: Check that the tag matches KeycloakApiRails::VERSION
+      run: |
+        tag="${GITHUB_REF_NAME#v}"
+        version="$(ruby -Ilib -r keycloak-api-rails/version -e 'print KeycloakApiRails::VERSION')"
+        if [ "$tag" != "$version" ]; then
+          echo "::error::Tag '${GITHUB_REF_NAME}' does not match KeycloakApiRails::VERSION '${version}'"
+          exit 1
+        fi
+
+    - name: Run tests
+      run: bundle exec rspec
+
+    # Builds the gem, pushes it to RubyGems.org and waits for it to be available.
+    - uses: rubygems/release-gem@v1

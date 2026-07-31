@@ -230,6 +230,25 @@ From the `keycloak-rails-api` directory:
   $ docker run -v `pwd`:/usr/src/app/ keycloak-rails-api:test bundle exec rspec spec
 ```
 
+## How to release a new version
+
+Releases are published to [RubyGems](https://rubygems.org/gems/keycloak-api-rails) by GitHub Actions
+(`.github/workflows/release.yml`), through [Trusted Publishing](https://guides.rubygems.org/trusted-publishing/):
+no API key is stored in this repository, the workflow exchanges a short-lived GitHub OIDC token for a
+scoped RubyGems credential.
+
+1. Update `KeycloakApiRails::VERSION` in `lib/keycloak-api-rails/version.rb` and the `CHANGELOG.md`
+2. Commit and push these changes to `main`
+3. Tag the commit and push the tag:
+
+```
+  $ git tag -a v1.2.0 -m "Version 1.2.0"
+  $ git push origin v1.2.0
+```
+
+The workflow then checks that the tag matches `KeycloakApiRails::VERSION`, runs the tests, builds the gem
+and pushes it. It only publishes tags starting with `v`.
+
 ## Next developments
 
 * Manage multiple realms
