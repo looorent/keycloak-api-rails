@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+* New test helpers, in `keycloak-api-rails/testing`: `KeycloakApiRails::Testing.stub_public_keys!` validates the tokens forged by `keycloak_token` and `keycloak_auth_headers`, so that controller and request tests can be authenticated without a Keycloak server, and without the boilerplate the README used to describe. This file is not loaded by `keycloak-api-rails` and has to be required explicitly
 * Publish the gem to RubyGems from Github Actions when a `v*` tag is pushed, using RubyGems' Trusted Publishing
 
 ## [1.1.0] - 2026-07-31

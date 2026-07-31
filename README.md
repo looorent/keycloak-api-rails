@@ -191,35 +191,59 @@ end
 
 ## Writing integration tests
 
-If you want to write controller tests in your codebase and that Keycloak is configured for these controllers, here is how to mock it.
+If you want to write controller or request tests in your codebase and that Keycloak is configured for these controllers,
+this gem provides the helpers that forge valid tokens, so that no Keycloak server is required.
+These helpers are not loaded by `keycloak-api-rails`: they have to be required explicitly, so that nothing they define ends up in a production process.
 These lines are based on tests written using `rspec`.
 
-* First, create a private key. This key should be created once per test suite for performance matters.
 ```ruby
-config.before(:suite) do
-  $private_key = OpenSSL::PKey::RSA.generate(1024)
+# spec/rails_helper.rb
+require "keycloak-api-rails/testing"
+
+RSpec.configure do |config|
+  config.include KeycloakApiRails::Testing::Helpers
+  config.before(:suite) { KeycloakApiRails::Testing.stub_public_keys! }
 end
 ```
-* Then, in a `shared_context`, configure a lazy token based on your main user. (here, we assume you have a `user` variable with a `keycloak_id` property)
+
+`stub_public_keys!` makes the library validate the tokens forged by these helpers, instead of fetching public keys from a Keycloak server.
+`server_url` and `realm_id` therefore do not have to be configured in the test environment. Requests can then be authenticated with:
+
 ```ruby
-let(:jwt) do
-  claims = {
-    iat: Time.zone.now.to_i,
-    exp: (Time.zone.now + 1.day).to_i,
-    sub: user.keycloak_id,
-  }
-  token = JSON::JWT.new(claims)
-  token.kid = "default"
-  token.sign($private_key, :RS256).to_s
+it "returns the current user" do
+  get "/me", headers: keycloak_auth_headers(sub: user.keycloak_id)
+
+  expect(response).to have_http_status(:ok)
 end
 ```
-* Finally, in the same `shared_context`, stub `KeycloakApiRails.public_key_resolver` to use a valid public key that is able to validate `jwt`:
+
+`keycloak_auth_headers` returns an `Authorization` header, and `keycloak_token` returns the token alone.
+Both accept the same optional parameters, one for each claim this library reads:
+
+| Parameter | Claim | Default |
+| --- | --- | --- |
+| `sub` | `sub` | a random UUID |
+| `email` | `email` | none |
+| `locale` | `locale` | none |
+| `authorized_party` | `azp` | none |
+| `roles` | `realm_access.roles` | none |
+| `resource_roles` | `resource_access` | none |
+| `issued_at` | `iat` | now |
+| `expires_at` | `exp` | one hour after `issued_at` |
+| `claims` | any other claim | none |
+
+For instance, to authenticate a request as a user having the realm role `admin`, the role `reader` on the client `a-client`,
+and a `tenant_id` attribute declared in `config.custom_attributes`:
+
 ```ruby
-before(:each) do
-  public_key_resolver = KeycloakApiRails.public_key_resolver
-  allow(public_key_resolver).to receive(:find_public_keys) { JSON::JWK::Set.new(JSON::JWK.new($private_key, kid: "default")) }
-end
+headers = keycloak_auth_headers(sub:            user.keycloak_id,
+                                roles:          ["admin"],
+                                resource_roles: { "a-client" => ["reader"] },
+                                claims:         { "tenant_id" => tenant.id })
 ```
+
+An expired token is forged by passing an `expires_at` in the past, which is how a `401` can be tested.
+Assigning `KeycloakApiRails.public_key_resolver = nil` restores the regular resolver.
 
 ## How to execute library tests
 

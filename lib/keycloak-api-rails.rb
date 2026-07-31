@@ -33,6 +33,14 @@ module KeycloakApiRails
     @public_key_resolver ||= PublicKeyCachedResolver.from_configuration(http_client, config)
   end
 
+  # Mainly used by "keycloak-api-rails/testing" to validate tokens without a Keycloak server.
+  # Assigning nil restores the regular resolver. The memoized service is discarded, since it holds
+  # a reference to the resolver that is being replaced.
+  def self.public_key_resolver=(resolver)
+    @public_key_resolver = resolver
+    @service             = nil
+  end
+
   def self.service
     @service ||= KeycloakApiRails::Service.new(public_key_resolver)
   end

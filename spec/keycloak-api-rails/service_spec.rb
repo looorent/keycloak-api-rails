@@ -205,6 +205,12 @@ RSpec.describe KeycloakApiRails::Service do
         @result = service2.need_middleware_authentication?(method, path, headers)
       end
 
+      # The configuration is global: leaving 'opt_in' enabled would disable the authentication
+      # of every example running afterwards.
+      after do
+        KeycloakApiRails.config.opt_in = false
+      end
+
       it "should return false" do
         expect(@result).to be false
       end
