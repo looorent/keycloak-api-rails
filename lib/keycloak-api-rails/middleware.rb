@@ -8,36 +8,33 @@ module KeycloakApiRails
     def call(env)
       method = env["REQUEST_METHOD"]
       path   = env["PATH_INFO"]
-      uri    = env["REQUEST_URI"]
 
       if service.need_middleware_authentication?(method, path, env)
         logger.debug("Start authentication for #{method} : #{path}")
-        token         = service.read_token(uri, env)
-        decoded_token = service.decode_and_verify(token)
-        authentication_succeeded(env, decoded_token)
+        begin
+          authenticate(env)
+        rescue TokenError => e
+          logger.debug("The error causing the Token to fail: #{e.original_error&.message || e.message}")
+          return authentication_failed(e.message)
+        end
       else
         logger.debug("Skip authentication for #{method} : #{path}")
-        @app.call(env)
       end
-    rescue TokenError => e
-      logger.debug("The error causing the Token to fail: #{e.original_error&.message || e.message}")
-      authentication_failed(e.message)
+
+      @app.call(env)
+    end
+
+    private
+
+    def authenticate(env)
+      token         = service.read_token(Helper.request_uri(env), env)
+      decoded_token = service.decode_and_verify(token)
+      Helper.assign_token(env, decoded_token, config.custom_attributes)
     end
 
     def authentication_failed(message)
-      [401, {"Content-Type" => "application/json"}, [ { error: message }.to_json]]
-    end
-
-    def authentication_succeeded(env, decoded_token)
-      Helper.assign_current_user_id(env, decoded_token)
-      Helper.assign_current_authorized_party(env, decoded_token)
-      Helper.assign_current_user_email(env, decoded_token)
-      Helper.assign_current_user_locale(env, decoded_token)
-      Helper.assign_current_user_custom_attributes(env, decoded_token, config.custom_attributes)
-      Helper.assign_realm_roles(env, decoded_token)
-      Helper.assign_resource_roles(env, decoded_token)
-      Helper.assign_keycloak_token(env, decoded_token)
-      @app.call(env)
+      # Rack 3 requires header names to be lowercase.
+      [401, { "content-type" => "application/json" }, [{ error: message }.to_json]]
     end
 
     def service
