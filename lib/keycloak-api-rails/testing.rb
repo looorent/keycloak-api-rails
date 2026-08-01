@@ -38,19 +38,21 @@ module KeycloakApiRails
       end
     end
 
+    MONITOR = Monitor.new
+
     class << self
       # The RSA key pair used to sign the tokens forged by this module. It is generated once per
       # process: generating a key is by far the slowest operation of a test suite that uses tokens.
       def private_key
-        @private_key ||= OpenSSL::PKey::RSA.generate(KEY_SIZE)
+        MONITOR.synchronize { @private_key ||= OpenSSL::PKey::RSA.generate(KEY_SIZE) }
       end
 
       def signing_key
-        @signing_key ||= JSON::JWK.new(private_key, kid: KEY_ID)
+        MONITOR.synchronize { @signing_key ||= JSON::JWK.new(private_key, kid: KEY_ID) }
       end
 
       def public_keys
-        @public_keys ||= JSON::JWK::Set.new(JSON::JWK.new(private_key.public_key, kid: KEY_ID))
+        MONITOR.synchronize { @public_keys ||= JSON::JWK::Set.new(JSON::JWK.new(private_key.public_key, kid: KEY_ID)) }
       end
 
       # Makes the library validate the tokens forged by this module. Assigning
