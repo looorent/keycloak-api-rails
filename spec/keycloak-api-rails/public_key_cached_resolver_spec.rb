@@ -76,5 +76,93 @@ RSpec.describe KeycloakApiRails::Service do
         end
       end
     end
+
+    context "when Keycloak has become unreachable" do
+      let(:keycloak) { KeycloakApiRails::ControllablePublicKeyResolverStub.new("the-public-keys") }
+
+      before(:each) do
+        resolver.instance_variable_set(:@resolver, keycloak)
+      end
+
+      context "and public keys have already been retrieved" do
+        before(:each) do
+          resolver.find_public_keys
+          keycloak.become_unreachable!
+          Timecop.freeze(Time.now + public_key_cache_ttl.seconds + 10.seconds)
+        end
+
+        it "keeps serving the keys retrieved last" do
+          expect(resolver.find_public_keys).to eq "the-public-keys"
+        end
+
+        it "keeps the time at which those keys were retrieved" do
+          retrieved_at = resolver.cached_public_key_retrieved_at
+          resolver.find_public_keys
+
+          expect(resolver.cached_public_key_retrieved_at).to eq retrieved_at
+        end
+
+        it "does not call Keycloak again on every request" do
+          calls_before_failing = keycloak.calls
+          5.times { resolver.find_public_keys }
+
+          expect(keycloak.calls).to eq calls_before_failing + 1
+        end
+
+        it "calls Keycloak again once the retry delay has elapsed" do
+          resolver.find_public_keys
+          calls_after_first_failure = keycloak.calls
+
+          Timecop.freeze(Time.now + KeycloakApiRails::PublicKeyCachedResolver::FAILED_REFRESH_RETRY_DELAY_IN_SECONDS + 1)
+          resolver.find_public_keys
+
+          expect(keycloak.calls).to eq calls_after_first_failure + 1
+        end
+
+        it "serves the fresh keys again once Keycloak answers" do
+          resolver.find_public_keys
+          Timecop.freeze(Time.now + KeycloakApiRails::PublicKeyCachedResolver::FAILED_REFRESH_RETRY_DELAY_IN_SECONDS + 1)
+          resolver.instance_variable_set(:@resolver, KeycloakApiRails::ControllablePublicKeyResolverStub.new("the-new-public-keys"))
+
+          expect(resolver.find_public_keys).to eq "the-new-public-keys"
+        end
+      end
+
+      context "and no public key has ever been retrieved" do
+        before(:each) do
+          keycloak.become_unreachable!
+        end
+
+        # Answering nil would let the service decode a token without verifying its signature.
+        it "propagates the error rather than answering without a key" do
+          expect { resolver.find_public_keys }.to raise_error KeycloakApiRails::HTTPError
+        end
+      end
+    end
+
+    context "when several threads need the public keys at once" do
+      let(:keycloak) { KeycloakApiRails::ControllablePublicKeyResolverStub.new("the-public-keys", delay: 0.05) }
+
+      before(:each) do
+        resolver.instance_variable_set(:@resolver, keycloak)
+      end
+
+      def resolve_concurrently(thread_count)
+        Array.new(thread_count) { Thread.new { resolver.find_public_keys } }.map(&:value)
+      end
+
+      it "downloads the public keys once" do
+        expect(resolve_concurrently(10)).to all eq "the-public-keys"
+        expect(keycloak.calls).to eq 1
+      end
+
+      it "downloads them once again when the cache outlives its TTL" do
+        resolve_concurrently(10)
+        Timecop.freeze(Time.now + public_key_cache_ttl.seconds + 10.seconds)
+
+        expect(resolve_concurrently(10)).to all eq "the-public-keys"
+        expect(keycloak.calls).to eq 2
+      end
+    end
   end
 end

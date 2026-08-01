@@ -9,13 +9,12 @@ module KeycloakApiRails
     protected
 
     def keycloak_authenticate
-      env = request.env
+      env    = request.env
       method = env["REQUEST_METHOD"]
       path   = env["PATH_INFO"]
-      uri    = env["REQUEST_URI"]
 
       KeycloakApiRails.logger.debug("Start authentication for #{method} : #{path}")
-      token         = KeycloakApiRails.service.read_token(uri, env)
+      token         = KeycloakApiRails.service.read_token(Helper.request_uri(env), env)
       decoded_token = KeycloakApiRails.service.decode_and_verify(token)
       authentication_succeeded(env, decoded_token)
     rescue TokenError => e
@@ -28,14 +27,7 @@ module KeycloakApiRails
     end
 
     def authentication_succeeded(env, decoded_token)
-      Helper.assign_current_user_id(env, decoded_token)
-      Helper.assign_current_authorized_party(env, decoded_token)
-      Helper.assign_current_user_email(env, decoded_token)
-      Helper.assign_current_user_locale(env, decoded_token)
-      Helper.assign_current_user_custom_attributes(env, decoded_token, KeycloakApiRails.config.custom_attributes)
-      Helper.assign_realm_roles(env, decoded_token)
-      Helper.assign_resource_roles(env, decoded_token)
-      Helper.assign_keycloak_token(env, decoded_token)
+      Helper.assign_token(env, decoded_token, KeycloakApiRails.config.custom_attributes)
     end
   end
 end

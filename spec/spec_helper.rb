@@ -2,6 +2,7 @@ require_relative "../lib/keycloak-api-rails"
 require_relative "support/rails_helper"
 require_relative "support/public_key_cached_resolver_stub"
 require_relative "support/public_key_resolver_stub"
+require_relative "support/controllable_public_key_resolver_stub"
 require "timecop"
 require "byebug"
 
