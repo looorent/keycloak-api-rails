@@ -5,7 +5,7 @@ This gem validates Keycloak JWT token for Ruby On Rails APIs.
 ## Requirements
 
 * Ruby `>= 2.7`
-* Rails `>= 4.2`
+* Railties `>= 4.2` — only `Rails::Railtie` is used
 
 Every push is tested against Ruby 2.7, 3.0, 3.1, 3.2, 3.3, 3.4 and 4.0. Each of them installs the
 most recent dependencies it supports, so the test suite runs against Rails 7.1 (Ruby 2.7 and 3.0),
@@ -18,27 +18,25 @@ the recommended path.
 ## Install
 
 ```ruby
-gem "keycloak-api-rails", "1.1.2"
+gem "keycloak-api-rails", "2.0.0"
 ```
 
 ## Token validation
 
-Tokens sent (through query strings or Authorization headers) are validated against a Keycloak public key. This public key is downloaded every day by default (this interval can be changed through `public_key_cache_ttl`).
+Tokens are validated against a Keycloak public key. This public key is downloaded every day by default (this interval can be changed through `public_key_cache_ttl`).
 
 ## Pass token to the API
 
-* Method 1: By adding an `Authorization` HTTP Header with its value set to `Bearer <your token>`.
-  _e.g_ using curl: `curl -H "Authorization: Bearer <your-token>" https://api.pouet.io/api/more-pouets`
-* Method 2: By providing the token via query string, especially via the parameter named `authorizationToken`. Keep in mind that this method is less secure (url are kept intact in your browser history, and so on...)
-  _e.g._ using curl: `curl https://api.pouet.io/api/more-pouets?authorizationToken<your-token>`
+* Method 1: By adding an `Authorization` HTTP Header with its value set to `Bearer <your token>`. The scheme is case-insensitive.  _e.g_ using curl: `curl -H "Authorization: Bearer <your-token>" https://api.pouet.io/api/more-pouets`
+* Method 2: By providing the token via query string, in the parameter named `authorizationToken`. This method has to be enabled explicitly, through `config.allow_token_in_query_string = true`: a token carried by a URL is kept in the browser history, sent along in the `Referer` header, and written to the access logs of every proxy on the way. _e.g._ using curl: `curl https://api.pouet.io/api/more-pouets?authorizationToken=<your-token>`
 
-_If both method are used at the same time, The query string as a higher priority when reading given tokens._
+_If both methods are used at the same time, the `Authorization` header takes precedence: it is the one that does not leak._
 
 ## Opt-in vs. Opt-out validation
 
 By default, Keycloak-api-rails installs as a Rack Middleware. It processes all requests before any application logic. URIs/Paths can be excluded (opted-out) from this validation using the 'skip_paths' config option
 
-Alternatively, it can be configured to `opt-in` to validation. In this case, no Rack middleware is used, and controllers can request (opt-in) by including the module `KeycloakApiRails::authentication` and calling `keycloak_authenticate`, for example in a `before_action`, like so: 
+Alternatively, it can be configured to `opt-in` to validation. In this case, no Rack middleware is used, and controllers can request (opt-in) by including the module `KeycloakApiRails::Authentication` and calling `keycloak_authenticate`, for example in a `before_action`, like so: 
 
 ```ruby
 class MyApiController < ActionController::Base
@@ -62,15 +60,26 @@ All options have a default value. However, all of them can be changed in your in
 
 | Option | Default Value | Type | Required? | Description  | Example |
 | ---- | ----- | ------ | ----- | ------ | ----- |
-| `server_url` | `nil`| String | Required | The base url where your Keycloak server is located. This value can be retrieved in your Keycloak client configuration. | `auth:8080` |
+| `server_url` | `nil`| String | Required | The base url where your Keycloak server is located. This value can be retrieved in your Keycloak client configuration. | `auth:8080` |
 | `realm_id` | `nil`| String | Required | Realm's name (not id, actually) | `master` |
-| `logger` | `Logger.new(STDOUT)`| Logger | Optional | The logger used by `keycloak-api-rails` | `Rails.logger` | 
-| `skip_paths` | `{}`| Hash of methods and paths regexp | Optional | Paths whose the token must not be validatefd | `{ get: [/^\/health\/.+/] }`| 
-| `opt_in` | `false` | Boolean | Optional | When true, All requests will be validated (excluding requests matching `skip_paths`). When false, validation must be explicitly requested | `true`
-| `token_expiration_tolerance_in_seconds` | `10`| Logger | Optional | Number of seconds a token can expire before being rejected by the API. | `15` | 
-| `public_key_cache_ttl` | `86400`| Integer | Optional | Amount of time, in seconds, specifying maximum interval between two requests to {project_name} to retrieve new public keys. It is 86400 seconds (1 day) by default. At least once per this configured interval (1 day by default) will be new public key always downloaded. | `Rails.logger` | 
-| `custom_attributes` | `[]`| Array Of String | Optional | List of token attributes to read from each token and to add to their http request env | `["originalFirstName", "originalLastName"]` | 
-| `ca_certificate_file` | `nil`| String | Optional | Path to the certificate authority used to validate the Keycloak server certificate | `/credentials/production_root_ca_cert.pem` | 
+| `logger` | `Logger.new(STDOUT)`| Logger | Optional | The logger used by `keycloak-api-rails` | `Rails.logger` | 
+| `skip_paths` | `{}`| Hash of methods and paths regexp | Optional | Paths whose token must not be validated | `{ get: [/^\/health\/.+/] }`| 
+| `opt_in` | `false` | Boolean | Optional | When false, every request is validated by the middleware, except the ones matching `skip_paths`. When true, no middleware validates anything and authentication must be requested explicitly, by calling `keycloak_authenticate` from a controller | `true`
+| `token_expiration_tolerance_in_seconds` | `10`| Integer | Optional | Safety margin: a token is rejected this number of seconds *before* the date of its `exp` claim, so that it cannot expire in the middle of a request | `15` |
+| `public_key_cache_ttl` | `86400`| Integer | Optional | Amount of time, in seconds, specifying maximum interval between two requests to Keycloak to retrieve new public keys. It is 86400 seconds (1 day) by default. At least once per this configured interval (1 day by default) will be new public key always downloaded. | `3600` |
+| `custom_attributes` | `[]`| Array Of String | Optional | List of token attributes to read from each token and to add to their http request env | `["originalFirstName", "originalLastName"]` |
+| `ca_certificate_file` | `nil`| String | Optional | Path to the certificate authority used to validate the Keycloak server certificate | `/credentials/production_root_ca_cert.pem` |
+| `expected_audience` | `nil`| String or Array of String | Optional | When set, a token is rejected unless its `aud` claim carries one of these audiences. Left unset, every token signed by the realm is accepted, including its ID tokens and the tokens issued for its other clients | `"my-api"` |
+| `expected_token_type` | `nil`| String | Optional | When set, a token is rejected unless its `typ` claim matches. Keycloak types its access tokens `Bearer` | `"Bearer"` |
+| `verify_not_before` | `false`| Boolean | Optional | When true, a token whose `nbf` claim is in the future is rejected. Disabled by default: a clock skew between Keycloak and the API would reject valid tokens | `true` |
+| `allow_token_in_query_string` | `false`| Boolean | Optional | When true, a request carrying no `Authorization` header may be authenticated by the `authorizationToken` parameter of its query string | `true` |
+| `http_open_timeout` | `5`| Integer | Optional | Seconds to wait for the connection to Keycloak to open, when downloading the public keys | `2` |
+| `http_read_timeout` | `5`| Integer | Optional | Seconds to wait for the answer of Keycloak, when downloading the public keys | `2` |
+
+The configuration is validated when the application boots: a mistake in the initializer raises a
+`KeycloakApiRails::InvalidConfigurationError` naming the offending option, rather than failing on
+the first request that reaches the middleware.
+
 ## Configure it
 
 Create a `keycloak.rb` file in your Rails `config/initializers` folder. For instance:
@@ -99,6 +108,26 @@ end
 ```
 
 When using `opt-in` is true, `skip_paths` is not used. 
+
+## Restricting which tokens are accepted
+
+A token is always checked against the public keys of the realm, and against its expiration date.
+That alone accepts *every* token the realm signed: the ID token of the same user, and the access tokens issued for the other clients of that realm. Declaring the audience the API expects.
+The `aud` claim, and the type of token it accepts, the `typ` claim, which Keycloak sets to `Bearer` on its access tokens, narrows that down:
+
+```ruby
+KeycloakApiRails.configure do |config|
+  config.server_url          = ENV["KEYCLOAK_SERVER_URL"]
+  config.realm_id            = ENV["KEYCLOAK_REALM_ID"]
+  config.expected_audience   = "my-api"
+  config.expected_token_type = "Bearer"
+end
+```
+
+Keycloak only adds an API to the `aud` claim of a token once that API is declared as an audience of the client requesting it, through an *audience mapper* on the client scope. Check what your realm actually issues before enabling `expected_audience`, or every request will be answered a `401`.
+
+`config.verify_not_before = true` additionally rejects a token whose `nbf` claim is in the future.
+It is disabled by default because a clock skew between Keycloak and the API rejects valid tokens.
 
 ## Use cases
 
@@ -172,6 +201,8 @@ end
 ```
 
 This should output `https://api.pouet.io/api/more-pouets?authorizationToken=myToken`.
+
+Such an URL is only accepted by an API that set `config.allow_token_in_query_string = true`.
 
 
 ### Accessing Keycloak Service
@@ -266,8 +297,8 @@ scoped RubyGems credential.
 3. Tag the commit and push the tag:
 
 ```
-  $ git tag -a v1.2.0 -m "Version 1.2.0"
-  $ git push origin v1.2.0
+  $ git tag -a v2.0.0 -m "Version 2.0.0"
+  $ git push origin v2.0.0
 ```
 
 The workflow then checks that the tag matches `KeycloakApiRails::VERSION`, runs the tests, builds the gem
@@ -276,4 +307,3 @@ and pushes it. It only publishes tags starting with `v`.
 ## Next developments
 
 * Manage multiple realms
-* Avoid duplicate code in KeycloakApiRails::Middleware and `KeycloakApiRails::Authentication`

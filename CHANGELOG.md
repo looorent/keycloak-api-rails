@@ -5,6 +5,61 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-08-01
+
+### Breaking changes
+
+* `TokenError` is now namespaced: `KeycloakApiRails::TokenError`.
+* The gem depends on `railties` rather than on the whole `rails` meta gem
+* An invalid configuration raises `KeycloakApiRails::InvalidConfigurationError` when the application boots
+* A token this library cannot read at all is answered a `401`, where an unexpected error used to escape the middleware as a `500`
+* A token carried by the `authorizationToken` query string parameter is ignored unless the new `allow_token_in_query_string` option is enabled
+* `KeycloakApiRails::HTTPClient` raises `KeycloakApiRails::HTTPError` when Keycloak answers an error, a malformed payload, or cannot be reached.
+
+### Security
+
+* New `expected_audience` option: when set, a token whose `aud` claim does not carry one of the expected audiences is rejected. Without it, every token signed by the realm is accepted (including its ID tokens) which Keycloak signs with the very same key, and the access tokens issued for its other clients
+* New `expected_token_type` option: when set, a token whose `typ` claim does not match is rejected. Keycloak types its access tokens `Bearer`
+* New `verify_not_before` option: when enabled, a token whose `nbf` claim is in the future is rejected. Disabled by default, since a clock skew between Keycloak and the API would reject valid tokens
+* A token carrying no `exp` claim is rejected, where `Time.at(nil)` used to raise a `TypeError` and answer a `500`
+* The resolver never answers without a public key: decoding a token without one would skip the signature verification altogether
+
+### Fixed
+
+* The `401` answered by the middleware carries a lowercase `content-type` header, as the Rack 3 SPEC requires.
+* The `Authorization` header is read again when the Rack environment carries no `REQUEST_URI`. 
+* A `TokenError` raised further down the stack is no longer swallowed by the middleware and turned into a `401`
+* `skip_paths` declared with String or upcased HTTP methods, e.g. `{ "GET" => [...] }`, are honoured instead of silently never matching
+* `TokenError.unknown` raised an `ArgumentError`, being called without any argument
+* `TokenError.invalid_format` no longer reports a `nil` cause: the rescue clause read an `e` that was never bound
+* `Helper.current_user_roles` was declared twice
+* The `Authorization` scheme is read case-insensitively, as RFC 7235 requires, and any amount of whitespace may separate it from the token. `gsub(/^Bearer /, "")` also stripped the scheme from every line that followed the first one, `^` matching the beginning of any line in Ruby
+
+### Thread safety
+
+* The memoized service, public key resolver and HTTP client are built once per process, whichever thread reaches them first. Every thread of a threaded server used to build its own on the first request
+* The public keys are downloaded once when several threads find the cache expired at the same time, rather than once per thread
+* `KeycloakApiRails::Testing` generates a single key pair under a parallelized test suite. Two threads generating one each would leave the signing key and the published public key out of sync, failing the verification of every forged token
+
+### Availability
+
+* The requests downloading the public keys apply the new `http_open_timeout` and `http_read_timeout` options, 5 seconds each. Without them, `Net::HTTP` waits 60 seconds to open the connection and 60 more to read the answer: a Keycloak that hangs held every request thread of the API
+* An unreachable Keycloak no longer takes the API down: the public keys retrieved last keep being used past their TTL, and a failed refresh is not attempted again for 10 seconds
+
+### Added
+
+* The configuration is validated at boot, and `Configuration#validate!` reports every problem at once
+* A warning is logged at boot when `server_url` and `realm_id` are not both configured
+
+### Upgrading from 1.x to 2.0
+
+* `TokenError` has moved into the module of the library, and is now `KeycloakApiRails::TokenError`. An application rescuing it (typically around `keycloak_authenticate`) has to be updated. Its `reason` can now also be `:not_yet_valid`, `:invalid_audience`, `:invalid_token_type`, `:missing_claim` and `:unknown`
+* A token carried by the `authorizationToken` query string parameter is ignored unless `config.allow_token_in_query_string = true` is set, and the `Authorization` header now takes precedence over it. An API whose clients pass their token through the URL (a browser following a link, a `<video>` tag) has to enable the option explicitly.
+* The gem depends on `railties` instead of `rails`. An application that relied on this gem to pull Rails in has to declare `rails` itself
+* A configuration mistake now raises a `KeycloakApiRails::InvalidConfigurationError` when the application boots, instead of failing on the first request
+* A request carrying a token that this library cannot read at all is answered a `401` instead of raising, which used to result in a `500`
+* Failing to download the public keys raises a `KeycloakApiRails::HTTPError`. It used to log the error and let the resolver fail later, with an unrelated `NoMethodError`
+
 ## [1.1.2] - 2026-08-01
 
 * Gem metadata
