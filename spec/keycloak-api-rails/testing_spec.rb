@@ -28,10 +28,13 @@ RSpec.describe KeycloakApiRails::Testing do
     # configuration is global: these examples cannot rely on what the other ones leave behind.
     KeycloakApiRails.config.opt_in    = false
     KeycloakApiRails.config.skip_paths = {}
+    @logger = KeycloakApiRails.config.logger
+    KeycloakApiRails.config.logger = ::Logger.new(File::NULL)
     KeycloakApiRails::Testing.stub_public_keys!
   end
 
   after(:each) do
+    KeycloakApiRails.config.logger       = @logger
     KeycloakApiRails.public_key_resolver = nil
   end
 

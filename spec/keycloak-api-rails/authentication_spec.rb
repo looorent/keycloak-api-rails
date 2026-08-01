@@ -59,6 +59,12 @@ describe KeycloakApiRails::Authentication do
     before do
       # Mock request object because we aren't using real request spec
       allow(controller).to receive(:request).and_return(double("request", env: headers ))
+      @logger = KeycloakApiRails.config.logger
+      KeycloakApiRails.config.logger = ::Logger.new(File::NULL)
+    end
+
+    after do
+      KeycloakApiRails.config.logger = @logger
     end
 
     it "it authenticates with request header" do
