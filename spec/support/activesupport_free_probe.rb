@@ -35,6 +35,7 @@ end
 
 assert("ActiveSupport is not loaded by the library") { !defined?(ActiveSupport) }
 
+### Configuration -- used to be ActiveSupport::Configurable
 configuration = KeycloakApiRails::Configuration.new
 KeycloakApiRails.config = configuration
 
@@ -67,6 +68,7 @@ assert("Authentication keeps its methods protected") do
     %i[authentication_failed authentication_succeeded keycloak_authenticate]
 end
 
+### Helper#read_token_from_query_string -- used to be `present?` and `second`
 {
   nil                                                             => "",
   ""                                                              => "",
@@ -81,6 +83,7 @@ end
   end
 end
 
+### Helper.request_uri -- rebuilds the URI from the keys the Rack SPEC mandates
 {
   { "REQUEST_URI" => "/health?a=1" }                 => "/health?a=1",
   { "PATH_INFO" => "/health", "QUERY_STRING" => "" } => "/health",
@@ -92,6 +95,7 @@ end
   end
 end
 
+### Service#expired? -- used to be `to_datetime` and `seconds`
 configuration.token_expiration_tolerance_in_seconds = 10
 configuration.skip_paths           = {}
 configuration.opt_in               = false
