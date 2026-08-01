@@ -60,6 +60,54 @@ RSpec.describe KeycloakApiRails::Helper do
     end
   end
 
+  describe "#read_token_from_headers" do
+    def read(authorization)
+      KeycloakApiRails::Helper.read_token_from_headers("HTTP_AUTHORIZATION" => authorization)
+    end
+
+    it "reads the token of a Bearer header" do
+      expect(read("Bearer aToken")).to eq "aToken"
+    end
+
+    it "reads the token whatever the case of the scheme (RFC 7235)" do
+      expect(read("bearer aToken")).to eq "aToken"
+      expect(read("BEARER aToken")).to eq "aToken"
+      expect(read("BeArEr aToken")).to eq "aToken"
+    end
+
+    it "reads the token whatever the number of spaces following the scheme" do
+      expect(read("Bearer   aToken")).to eq "aToken"
+      expect(read("Bearer\taToken")).to eq "aToken"
+    end
+
+    it "only strips the scheme at the very beginning of the value" do
+      expect(read("Bearer aToken\nBearer anotherToken")).to eq "aToken\nBearer anotherToken"
+    end
+
+    it "leaves a value carrying another scheme untouched" do
+      expect(read("Basic dXNlcjpwYXNzd29yZA==")).to eq "Basic dXNlcjpwYXNzd29yZA=="
+    end
+
+    it "returns an empty token when the header is absent" do
+      expect(KeycloakApiRails::Helper.read_token_from_headers({})).to eq ""
+    end
+  end
+
+  describe "#request_uri" do
+    it "returns the 'REQUEST_URI' the server provided" do
+      expect(KeycloakApiRails::Helper.request_uri("REQUEST_URI" => "/health?a=1")).to eq "/health?a=1"
+    end
+
+    it "rebuilds the uri when the environment carries no 'REQUEST_URI'" do
+      expect(KeycloakApiRails::Helper.request_uri("PATH_INFO" => "/health", "QUERY_STRING" => "a=1")).to eq "/health?a=1"
+    end
+
+    it "rebuilds the uri of a request that has no query string" do
+      expect(KeycloakApiRails::Helper.request_uri("PATH_INFO" => "/health", "QUERY_STRING" => "")).to eq "/health"
+      expect(KeycloakApiRails::Helper.request_uri("PATH_INFO" => "/health")).to eq "/health"
+    end
+  end
+
   describe "#create_url_with_token" do
 
     let(:uri)   { "http://www.an-url.io" }

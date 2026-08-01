@@ -10,6 +10,18 @@ module KeycloakApiRails
     RESOURCE_ROLES_KEY           = "keycloak:resource_roles"
     TOKEN_KEY                    = "keycloak:token"
     QUERY_STRING_TOKEN_KEY       = "authorizationToken"
+    BEARER_PREFIX                = /\ABearer[[:space:]]+/i.freeze # RFC 7235 makes the authentication scheme case-insensitive.
+
+    def self.assign_token(env, token, custom_attribute_names)
+      assign_current_user_id(env, token)
+      assign_current_authorized_party(env, token)
+      assign_current_user_email(env, token)
+      assign_current_user_locale(env, token)
+      assign_current_user_custom_attributes(env, token, custom_attribute_names)
+      assign_realm_roles(env, token)
+      assign_resource_roles(env, token)
+      assign_keycloak_token(env, token)
+    end
 
     def self.current_user_id(env)
       env[CURRENT_USER_ID_KEY]
@@ -71,15 +83,23 @@ module KeycloakApiRails
     end
 
     def self.assign_current_user_custom_attributes(env, token, attribute_names)
-      env[CURRENT_USER_ATTRIBUTES] = token.select { |key, value| attribute_names.include?(key) }
+      names = Array(attribute_names)
+      env[CURRENT_USER_ATTRIBUTES] = token.select { |key, _value| names.include?(key) }
     end
 
     def self.current_user_custom_attributes(env)
       env[CURRENT_USER_ATTRIBUTES]
     end
 
-    def self.current_user_roles(env)
-      env[ROLES_KEY]
+    def self.request_uri(env)
+      # 'REQUEST_URI' is not part of the Rack spec: Puma and Unicorn do set it
+      if env["REQUEST_URI"].nil?
+        query_string = env["QUERY_STRING"]
+        path         = env["PATH_INFO"].to_s
+        query_string.nil? || query_string.empty? ? path : "#{path}?#{query_string}"
+      else
+        env["REQUEST_URI"]
+      end
     end
 
     def self.read_token_from_query_string(uri)
@@ -91,6 +111,8 @@ module KeycloakApiRails
       else
         ""
       end
+    rescue URI::InvalidURIError, ArgumentError
+      nil
     end
 
     def self.create_url_with_token(uri, token)
@@ -102,7 +124,12 @@ module KeycloakApiRails
     end
 
     def self.read_token_from_headers(headers)
-      headers["HTTP_AUTHORIZATION"]&.gsub(/^Bearer /, "") || ""
+      authorization = headers["HTTP_AUTHORIZATION"]
+      if authorization.nil?
+        ""
+      else
+        authorization.sub(BEARER_PREFIX, "")
+      end
     end
   end
 end

@@ -4,10 +4,6 @@
 # The regular test suite loads `rails/all`, which makes ActiveSupport available everywhere and
 # therefore cannot detect that the library depends on it again. This probe is executed in a
 # separate process by spec/keycloak-api-rails/activesupport_free_spec.rb.
-#
-# The library files are required one by one on purpose: `lib/keycloak-api-rails.rb` pulls in
-# `json/jwt`, which depends on ActiveSupport. The point of this probe is that *our* code does not
-# use ActiveSupport, not that it never gets loaded by a third party.
 
 require "uri"
 require "date"
@@ -15,7 +11,6 @@ require "logger"
 
 LIB = File.expand_path("../../../lib/keycloak-api-rails", __FILE__)
 
-# Minimal stand-in for the parts of lib/keycloak-api-rails.rb the required files call at runtime.
 module KeycloakApiRails
   class << self
     attr_accessor :config
@@ -23,6 +18,7 @@ module KeycloakApiRails
 end
 
 require "#{LIB}/configuration"
+require "#{LIB}/token_error"
 require "#{LIB}/helper"
 require "#{LIB}/authentication"
 require "#{LIB}/public_key_resolver"
@@ -39,13 +35,14 @@ end
 
 assert("ActiveSupport is not loaded by the library") { !defined?(ActiveSupport) }
 
-### Configuration -- used to be ActiveSupport::Configurable
 configuration = KeycloakApiRails::Configuration.new
 KeycloakApiRails.config = configuration
 
 %i[
   server_url realm_id skip_paths opt_in token_expiration_tolerance_in_seconds
   public_key_cache_ttl custom_attributes logger ca_certificate_file
+  expected_audience expected_token_type verify_not_before allow_token_in_query_string
+  http_open_timeout http_read_timeout
 ].each do |name|
   assert("Configuration##{name} is nil until it is assigned") { configuration.public_send(name).nil? }
   configuration.public_send("#{name}=", "a value for #{name}")
@@ -70,7 +67,6 @@ assert("Authentication keeps its methods protected") do
     %i[authentication_failed authentication_succeeded keycloak_authenticate]
 end
 
-### Helper#read_token_from_query_string -- used to be `present?` and `second`
 {
   nil                                                             => "",
   ""                                                              => "",
@@ -85,13 +81,69 @@ end
   end
 end
 
-### Service#expired? -- used to be `to_datetime` and `seconds`
+{
+  { "REQUEST_URI" => "/health?a=1" }                 => "/health?a=1",
+  { "PATH_INFO" => "/health", "QUERY_STRING" => "" } => "/health",
+  { "PATH_INFO" => "/health", "QUERY_STRING" => nil } => "/health",
+  { "PATH_INFO" => "/health", "QUERY_STRING" => "a=1" } => "/health?a=1",
+}.each do |env, expected|
+  assert("Helper.request_uri(#{env.inspect}) returns #{expected.inspect}") do
+    KeycloakApiRails::Helper.request_uri(env) == expected
+  end
+end
+
 configuration.token_expiration_tolerance_in_seconds = 10
-configuration.skip_paths = {}
-configuration.opt_in     = false
-configuration.logger     = ::Logger.new(File::NULL)
+configuration.skip_paths           = {}
+configuration.opt_in               = false
+configuration.logger               = ::Logger.new(File::NULL)
+configuration.expected_audience           = nil
+configuration.expected_token_type         = nil
+configuration.verify_not_before           = false
+configuration.allow_token_in_query_string = false
 service = KeycloakApiRails::Service.new(nil)
 now = Time.now
+
+### Service#read_token -- the 'Authorization' header comes first, and the query string is opt-in
+{
+  ["/health", { "HTTP_AUTHORIZATION" => "Bearer a-token" }]                             => "a-token",
+  [nil, { "HTTP_AUTHORIZATION" => "Bearer a-token" }]                                   => "a-token",
+  ["/health", { "HTTP_AUTHORIZATION" => "bearer a-token" }]                             => "a-token",
+  ["/health", { "HTTP_AUTHORIZATION" => "Bearer a-token\nBearer another" }]             => "a-token\nBearer another",
+  ["/health?authorizationToken=another", { "HTTP_AUTHORIZATION" => "Bearer a-token" }]  => "a-token",
+  ["/health?authorizationToken=another", {}]                                            => "",
+  ["/health", {}]                                                                       => "",
+}.each do |(uri, headers), expected|
+  assert("Service#read_token(#{uri.inspect}, #{headers.inspect}) returns #{expected.inspect}") do
+    service.read_token(uri, headers) == expected
+  end
+end
+
+configuration.allow_token_in_query_string = true
+query_string_service = KeycloakApiRails::Service.new(nil)
+{
+  ["/health?authorizationToken=another", { "HTTP_AUTHORIZATION" => "Bearer a-token" }] => "a-token",
+  ["/health?authorizationToken=another", {}]                                           => "another",
+}.each do |(uri, headers), expected|
+  assert("Service#read_token(#{uri.inspect}, #{headers.inspect}) returns #{expected.inspect} when the query string is allowed") do
+    query_string_service.read_token(uri, headers) == expected
+  end
+end
+configuration.allow_token_in_query_string = false
+
+### Service#should_skip? -- HTTP methods are normalized
+configuration.skip_paths = { "GET" => [%r{^/health}] }
+skipping_service = KeycloakApiRails::Service.new(nil)
+{
+  ["GET", "/health/ready"] => true,
+  [:get, "/health/ready"]  => true,
+  ["GET", "/things"]       => false,
+  ["POST", "/health"]      => false,
+}.each do |(method, path), expected|
+  assert("Service#should_skip?(#{method.inspect}, #{path.inspect}) returns #{expected}") do
+    skipping_service.send(:should_skip?, method, path) == expected
+  end
+end
+configuration.skip_paths = {}
 
 {
   "expiring in one hour"                         => [(now + 3600).to_i, false],
