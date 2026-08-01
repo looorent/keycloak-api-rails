@@ -30,7 +30,7 @@ RSpec.describe KeycloakApiRails::Service do
       it "should raise an error :no_token" do
         expect {
           service.decode_and_verify(token)
-        }.to raise_error(TokenError, "No JWT token provided")
+        }.to raise_error(KeycloakApiRails::TokenError,"No JWT token provided")
       end
     end
 
@@ -39,7 +39,7 @@ RSpec.describe KeycloakApiRails::Service do
       it "should raise an error :no_token" do
         expect {
           service.decode_and_verify(token)
-        }.to raise_error(TokenError, "No JWT token provided")
+        }.to raise_error(KeycloakApiRails::TokenError,"No JWT token provided")
       end
     end
 
@@ -48,7 +48,7 @@ RSpec.describe KeycloakApiRails::Service do
       it "should raise an error :invalid_format" do
         expect {
           service.decode_and_verify(token)
-        }.to raise_error(TokenError, "Wrong JWT Format")
+        }.to raise_error(KeycloakApiRails::TokenError,"Wrong JWT Format")
       end
     end
 
@@ -63,7 +63,7 @@ RSpec.describe KeycloakApiRails::Service do
         it "should raise an error :verification_failed" do
           expect {
             service.decode_and_verify(token)
-          }.to raise_error(TokenError, "Failed to verify JWT token")
+          }.to raise_error(KeycloakApiRails::TokenError,"Failed to verify JWT token")
         end
       end
 
@@ -76,7 +76,7 @@ RSpec.describe KeycloakApiRails::Service do
           it "should raise an error :expiration_date" do
             expect {
               service.decode_and_verify(token)
-            }.to raise_error(TokenError, "JWT token is expired")
+            }.to raise_error(KeycloakApiRails::TokenError,"JWT token is expired")
           end
         end
 
@@ -89,7 +89,7 @@ RSpec.describe KeycloakApiRails::Service do
             expect(KeycloakApiRails.config.token_expiration_tolerance_in_seconds).to eq 10
             expect {
               service.decode_and_verify(token)
-            }.to raise_error(TokenError, "JWT token is expired")
+            }.to raise_error(KeycloakApiRails::TokenError,"JWT token is expired")
           end
         end
 
@@ -119,6 +119,167 @@ RSpec.describe KeycloakApiRails::Service do
             it "should return a not-nil decoded token" do
               expect(service.decode_and_verify(token)).to_not be_nil
             end
+          end
+        end
+      end
+    end
+  end
+
+  describe "#decode_and_verify claims" do
+    let(:claims) { {} }
+    let(:token)  { JSON::JWT.new({ "exp" => (Time.now + 3600).to_i }.merge(claims)).sign(private_key, :RS256).to_s }
+
+    after(:each) do
+      KeycloakApiRails.load_configuration
+    end
+
+    def service_configured_with(**options)
+      options.each { |name, value| KeycloakApiRails.config.public_send("#{name}=", value) }
+      KeycloakApiRails::Service.new(key_resolver)
+    end
+
+    describe "the 'exp' claim" do
+      context "when the token carries none" do
+        let(:token) { JSON::JWT.new("sub" => "a-user").sign(private_key, :RS256).to_s }
+
+        it "should raise an error :missing_claim" do
+          expect {
+            service.decode_and_verify(token)
+          }.to raise_error(KeycloakApiRails::TokenError, "JWT token does not carry the mandatory claim 'exp'")
+        end
+      end
+    end
+
+    describe "the 'aud' claim" do
+      context "when no audience is expected" do
+        let(:claims) { { "aud" => "another-api" } }
+
+        it "should accept a token issued for any audience" do
+          expect(service_configured_with(expected_audience: nil).decode_and_verify(token)).to_not be_nil
+        end
+      end
+
+      context "when an audience is expected" do
+        let(:decoding_service) { service_configured_with(expected_audience: "my-api") }
+
+        context "and the token carries it" do
+          let(:claims) { { "aud" => "my-api" } }
+
+          it "should return a not-nil decoded token" do
+            expect(decoding_service.decode_and_verify(token)).to_not be_nil
+          end
+        end
+
+        context "and the token carries it among several audiences" do
+          let(:claims) { { "aud" => ["another-api", "my-api"] } }
+
+          it "should return a not-nil decoded token" do
+            expect(decoding_service.decode_and_verify(token)).to_not be_nil
+          end
+        end
+
+        context "and the token has been issued for another audience" do
+          let(:claims) { { "aud" => "another-api" } }
+
+          it "should raise an error :invalid_audience" do
+            expect {
+              decoding_service.decode_and_verify(token)
+            }.to raise_error(KeycloakApiRails::TokenError, "JWT token has been issued for another audience")
+          end
+        end
+
+        context "and the token carries no audience" do
+          it "should raise an error :invalid_audience" do
+            expect {
+              decoding_service.decode_and_verify(token)
+            }.to raise_error(KeycloakApiRails::TokenError, "JWT token has been issued for another audience")
+          end
+        end
+      end
+
+      context "when several audiences are expected" do
+        let(:claims) { { "aud" => "the-second-api" } }
+
+        it "should accept a token issued for any of them" do
+          decoding_service = service_configured_with(expected_audience: ["the-first-api", "the-second-api"])
+
+          expect(decoding_service.decode_and_verify(token)).to_not be_nil
+        end
+      end
+    end
+
+    describe "the 'typ' claim" do
+      context "when no token type is expected" do
+        let(:claims) { { "typ" => "ID" } }
+
+        it "should accept a token of any type" do
+          expect(service_configured_with(expected_token_type: nil).decode_and_verify(token)).to_not be_nil
+        end
+      end
+
+      context "when the 'Bearer' token type is expected" do
+        let(:decoding_service) { service_configured_with(expected_token_type: "Bearer") }
+
+        context "and the token is an access token" do
+          let(:claims) { { "typ" => "Bearer" } }
+
+          it "should return a not-nil decoded token" do
+            expect(decoding_service.decode_and_verify(token)).to_not be_nil
+          end
+        end
+
+        # Keycloak signs the ID tokens of a realm with the very same key as its access tokens.
+        context "and the token is an ID token" do
+          let(:claims) { { "typ" => "ID" } }
+
+          it "should raise an error :invalid_token_type" do
+            expect {
+              decoding_service.decode_and_verify(token)
+            }.to raise_error(KeycloakApiRails::TokenError, "JWT token is not of the expected type")
+          end
+        end
+
+        context "and the token carries no type" do
+          it "should raise an error :invalid_token_type" do
+            expect {
+              decoding_service.decode_and_verify(token)
+            }.to raise_error(KeycloakApiRails::TokenError, "JWT token is not of the expected type")
+          end
+        end
+      end
+    end
+
+    describe "the 'nbf' claim" do
+      let(:claims) { { "nbf" => (Time.now + 3600).to_i } }
+
+      context "when 'verify_not_before' is disabled" do
+        it "should accept a token that is not valid yet" do
+          expect(service_configured_with(verify_not_before: false).decode_and_verify(token)).to_not be_nil
+        end
+      end
+
+      context "when 'verify_not_before' is enabled" do
+        let(:decoding_service) { service_configured_with(verify_not_before: true) }
+
+        it "should raise an error :not_yet_valid for a token that is not valid yet" do
+          expect {
+            decoding_service.decode_and_verify(token)
+          }.to raise_error(KeycloakApiRails::TokenError, "JWT token is not valid yet")
+        end
+
+        context "and the token became valid in the past" do
+          let(:claims) { { "nbf" => (Time.now - 3600).to_i } }
+
+          it "should return a not-nil decoded token" do
+            expect(decoding_service.decode_and_verify(token)).to_not be_nil
+          end
+        end
+
+        context "and the token carries no 'nbf' claim" do
+          let(:claims) { {} }
+
+          it "should return a not-nil decoded token" do
+            expect(decoding_service.decode_and_verify(token)).to_not be_nil
           end
         end
       end
@@ -218,14 +379,20 @@ RSpec.describe KeycloakApiRails::Service do
   end
 
   describe "#read_token" do
-    let(:query_string)       { "" }
-    let(:url)                { "http://api.service.com/api/health?aParameter=true#{query_string}" }
-    let(:headers)            { {} }
-    let(:header_token)       { "header_token" }
-    let(:query_string_token) { "query_string_token" }
+    let(:query_string)                { "" }
+    let(:url)                         { "http://api.service.com/api/health?aParameter=true#{query_string}" }
+    let(:headers)                     { {} }
+    let(:header_token)                { "header_token" }
+    let(:query_string_token)          { "query_string_token" }
+    let(:allow_token_in_query_string) { false }
 
     before(:each) do
-      @token = service.read_token(url, headers)
+      KeycloakApiRails.config.allow_token_in_query_string = allow_token_in_query_string
+      @token = KeycloakApiRails::Service.new(key_resolver).read_token(url, headers)
+    end
+
+    after(:each) do
+      KeycloakApiRails.config.allow_token_in_query_string = false
     end
 
     context "when the token is provided in the Authorization headers" do
@@ -234,6 +401,7 @@ RSpec.describe KeycloakApiRails::Service do
           "HTTP_AUTHORIZATION" => "Bearer #{header_token}"
         }
       end
+
       context "and not in the query string" do
         let(:query_string) { "" }
         it "returns the header token" do
@@ -241,10 +409,39 @@ RSpec.describe KeycloakApiRails::Service do
         end
       end
 
+      # The header wins: a token carried by a query string leaks into the browser history, the
+      # referrers and the access logs.
       context "and also in the query string" do
-        let(:query_string) { "&authorizationToken=#{query_string_token}" }
-        it "returns the query string token" do
-          expect(@token).to eq query_string_token
+        let(:query_string)                { "&authorizationToken=#{query_string_token}" }
+        let(:allow_token_in_query_string) { true }
+
+        it "returns the header token" do
+          expect(@token).to eq header_token
+        end
+      end
+
+      context "and the scheme is spelled in lowercase" do
+        let(:headers) { { "HTTP_AUTHORIZATION" => "bearer #{header_token}" } }
+
+        it "returns the header token" do
+          expect(@token).to eq header_token
+        end
+      end
+
+      context "and the scheme is separated by several spaces" do
+        let(:headers) { { "HTTP_AUTHORIZATION" => "Bearer   #{header_token}" } }
+
+        it "returns the header token" do
+          expect(@token).to eq header_token
+        end
+      end
+
+      # 'gsub(/^Bearer /, "")' used to strip the prefix from every line of the header.
+      context "and the header spans several lines" do
+        let(:headers) { { "HTTP_AUTHORIZATION" => "Bearer #{header_token}\nBearer another_token" } }
+
+        it "only strips the scheme of the first line" do
+          expect(@token).to eq "#{header_token}\nBearer another_token"
         end
       end
     end
@@ -272,8 +469,21 @@ RSpec.describe KeycloakApiRails::Service do
 
       context "but in the query string" do
         let(:query_string) { "&authorizationToken=#{query_string_token}" }
-        it "returns the query string token" do
-          expect(@token).to eq query_string_token
+
+        context "and the query string is not allowed to carry a token" do
+          let(:allow_token_in_query_string) { false }
+
+          it "returns an empty token" do
+            expect(@token).to eq ""
+          end
+        end
+
+        context "and the query string is allowed to carry a token" do
+          let(:allow_token_in_query_string) { true }
+
+          it "returns the query string token" do
+            expect(@token).to eq query_string_token
+          end
         end
       end
     end
