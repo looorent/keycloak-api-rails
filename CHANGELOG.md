@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+* `base64` and `logger` are declared as runtime dependencies.
 * A `401` carries the `WWW-Authenticate: Bearer` header RFC 6750 requires of a resource protected by a Bearer token. A request carrying no token at all gets the bare challenge; any other gets `error="invalid_token"` and the reason it was refused.
 
 ### Performance

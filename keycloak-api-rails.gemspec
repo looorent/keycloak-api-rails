@@ -31,6 +31,9 @@ Gem::Specification.new do |spec|
   spec.add_dependency "railties",    ">= 4.2"
   spec.add_dependency "json-jwt",    ">= 1.11.0"
 
+  spec.add_dependency "base64"
+  spec.add_dependency "logger"
+
   spec.add_development_dependency "rspec",   "3.13.2"
   spec.add_development_dependency "timecop", "0.9.11"
   spec.add_development_dependency "rails",   ">= 4.2"
