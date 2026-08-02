@@ -376,6 +376,13 @@ RSpec.describe KeycloakApiRails::Service do
       expect(service.decode_and_verify(signed_with(:RS512, private_key))).to_not be_nil
     end
 
+    it "should check the signature once" do
+      token = signed_with(:RS256, private_key)
+      expect(public_key).to receive(:verify).once.and_call_original
+
+      expect(service.decode_and_verify(token)).to_not be_nil
+    end
+
     it "should reject a token claiming to be signed with no algorithm at all" do
       expect {
         service.decode_and_verify(signed_with_alg_header("none"))

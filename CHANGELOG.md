@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Performance
 
+* Every authenticated request verified the signature of its token twice: `JSON::JWT.decode` already verifies the one it is given a key for. One RSA verification per request instead of two.
 * Added `# frozen_string_literal: true` to all ruby files and optimized Hot Path methods in `Service` and `Helper` (e.g., using `Regexp#match?`, avoiding redundant String-to-Symbol conversions) to significantly reduce CPU usage and memory allocations per request.
 
 ### Added

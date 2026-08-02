@@ -97,9 +97,7 @@ module KeycloakApiRails
     private
 
     def decode(token, public_keys)
-      decoded_token = JSON::JWT.decode(token, public_keys, @allowed_algorithms)
-      decoded_token.verify!(public_keys, @allowed_algorithms)
-      decoded_token
+      JSON::JWT.decode(token, public_keys, @allowed_algorithms)
     rescue JSON::JWT::VerificationFailed, JSON::JWK::Set::KidNotFound => e
       raise TokenError.verification_failed(token, e)
     rescue JSON::JWT::InvalidFormat => e
