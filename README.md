@@ -66,11 +66,11 @@ All options have a default value. However, all of them can be changed in your in
 | `skip_paths` | `{}`| Hash of methods and paths regexp | Optional | Paths whose token must not be validated. Each path must be a `Regexp`. A String is refused when the application boots: `String#match` compiles its argument into a regexp, so the path of the request would become the pattern and other routes would skip authentication | `{ get: [/^\/health\/.+/] }`| 
 | `opt_in` | `false` | Boolean | Optional | When false, every request is validated by the middleware, except the ones matching `skip_paths`. When true, no middleware validates anything and authentication must be requested explicitly, by calling `keycloak_authenticate` from a controller | `true`
 | `token_expiration_tolerance_in_seconds` | `10`| Integer | Optional | Safety margin: a token is rejected this number of seconds *before* the date of its `exp` claim, so that it cannot expire in the middle of a request | `15` |
-| `public_key_cache_ttl` | `86400`| Integer | Optional | Amount of time, in seconds, specifying maximum interval between two requests to Keycloak to retrieve new public keys. It is 86400 seconds (1 day) by default. At least once per this configured interval (1 day by default) will be new public key always downloaded. | `3600` |
+| `public_key_cache_ttl` | `86400`| Integer | Optional | Amount of time, in seconds, specifying maximum interval between two requests to Keycloak to retrieve new public keys. It is 86400 seconds (1 day) by default. At least once per this configured interval (1 day by default) will be new public key always downloaded. The refresh happens under a lock and blocks request threads if Keycloak hangs; reducing this TTL increases the frequency of this risk. | `3600` |
 | `custom_attributes` | `[]`| Array of String or Symbol | Optional | List of token attributes to read from each token and to add to their http request env | `["originalFirstName", "originalLastName"]` |
 | `ca_certificate_file` | `nil`| String | Optional | Path to the certificate authority used to validate the Keycloak server certificate | `/credentials/production_root_ca_cert.pem` |
 | `expected_audience` | `nil`| String or Array of String | Optional | When set, a token is rejected unless its `aud` claim carries one of these audiences. Left unset, every token signed by the realm is accepted, including its ID tokens and the tokens issued for its other clients | `"my-api"` |
-| `expected_token_type` | `nil`| String | Optional | When set, a token is rejected unless its `typ` claim matches. Keycloak types its access tokens `Bearer` | `"Bearer"` |
+| `expected_token_type` | `nil`| String | Optional | When set, a token is rejected unless its `typ` claim matches (case-insensitive). Keycloak types its access tokens `Bearer` | `"Bearer"` |
 | `verify_not_before` | `false`| Boolean | Optional | When true, a token whose `nbf` claim is in the future is rejected. Disabled by default: a clock skew between Keycloak and the API would reject valid tokens | `true` |
 | `allow_token_in_query_string` | `false`| Boolean | Optional | When true, a request carrying no `Authorization` header may be authenticated by the `authorizationToken` parameter of its query string | `true` |
 | `http_open_timeout` | `5`| Integer | Optional | Seconds to wait for the connection to Keycloak to open, when downloading the public keys | `2` |
@@ -212,7 +212,7 @@ For instance, to read a provided token:
 ```ruby
 class RenderTokenController < ApplicationController
   def show
-    uri     = request.env["REQUEST_URI"]
+    uri     = KeycloakApiRails::Helper.request_uri(request.env)
     headers = request.env
     token   = KeycloakApiRails.service.read_token(uri, headers)
     render json: { token: token }, status: :ok
