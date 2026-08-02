@@ -18,7 +18,7 @@ the recommended path.
 ## Install
 
 ```ruby
-gem "keycloak-api-rails", "2.0.1"
+gem "keycloak-api-rails", "2.0.2"
 ```
 
 ## Token validation
@@ -318,8 +318,8 @@ scoped RubyGems credential.
 3. Tag the commit and push the tag:
 
 ```
-  $ git tag -a v2.0.1 -m "Version 2.0.1"
-  $ git push origin v2.0.1
+  $ git tag -a v2.0.2 -m "Version 2.0.2"
+  $ git push origin v2.0.2
 ```
 
 The workflow then checks that the tag matches `KeycloakApiRails::VERSION`, runs the tests, builds the gem
