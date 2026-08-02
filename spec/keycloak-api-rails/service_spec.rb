@@ -470,8 +470,8 @@ RSpec.describe KeycloakApiRails::Service do
 
     before(:each) do
       KeycloakApiRails.config.skip_paths = {
-        post:   [/^\/skip/],
-        get:    [/^\/skip/]
+        post:   [/\A\/skip/],
+        get:    [/\A\/skip/]
       }
       @result = service.need_middleware_authentication?(method, path, headers)
     end

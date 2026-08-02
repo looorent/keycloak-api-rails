@@ -63,7 +63,7 @@ All options have a default value. However, all of them can be changed in your in
 | `server_url` | `nil`| String | Required | The base url where your Keycloak server is located. This value can be retrieved in your Keycloak client configuration. | `auth:8080` |
 | `realm_id` | `nil`| String, Array or Proc | Required | Realm's name(s) (not id, actually). Can be a single String, an Array of Strings for multiple tenants, or a Proc for dynamic validation. | `"master"` or `["tenant1", "tenant2"]` |
 | `logger` | `Logger.new(STDOUT)`| Logger | Optional | The logger used by `keycloak-api-rails` | `Rails.logger` | 
-| `skip_paths` | `{}`| Hash of methods and paths regexp | Optional | Paths whose token must not be validated. Each path must be a `Regexp`. A String is refused when the application boots: `String#match` compiles its argument into a regexp, so the path of the request would become the pattern and other routes would skip authentication | `{ get: [/^\/health\/.+/] }`| 
+| `skip_paths` | `{}`| Hash of methods and paths regexp | Optional | Paths whose token must not be validated, matched against the URL-decoded path of the request. Each path must be a `Regexp`, anchored with `\A` and `\z`: a String is refused when the application boots, and `^` and `$` are warned about, for the reasons given below | `{ get: [/\A\/health\/.+/] }`| 
 | `opt_in` | `false` | Boolean | Optional | When false, every request is validated by the middleware, except the ones matching `skip_paths`. When true, no middleware validates anything and authentication must be requested explicitly, by calling `keycloak_authenticate` from a controller | `true`
 | `token_expiration_tolerance_in_seconds` | `10`| Integer | Optional | Safety margin: a token is rejected this number of seconds *before* the date of its `exp` claim, so that it cannot expire in the middle of a request | `15` |
 | `public_key_cache_ttl` | `86400`| Integer | Optional | Amount of time, in seconds, specifying maximum interval between two requests to Keycloak to retrieve new public keys. It is 86400 seconds (1 day) by default. At least once per this configured interval (1 day by default) will be new public key always downloaded. The refresh happens under a lock and blocks request threads if Keycloak hangs; reducing this TTL increases the frequency of this risk. | `3600` |
@@ -91,11 +91,18 @@ KeycloakApiRails.configure do |config|
   config.realm_id   = ENV["KEYCLOAK_REALM_ID"]
   config.logger     = Rails.logger
   config.skip_paths = {
-    post:   [/^\/message/],
-    get:    [/^\/locales/, /^\/health\/.+/]
+    post:   [/\A\/message/],
+    get:    [/\A\/locales/, /\A\/health\/.+/]
   }
 end
 ```
+
+Anchor those regexps with `\A` and `\z`, never with `^` and `$`. In Ruby, `^` and `$` match the
+beginning and the end of a *line*, not of the string. The path they are matched against is
+`PATH_INFO`, which the server has already URL-decoded, so a `%0a` in the request reaches them as a
+real newline: `"/private\n/health"` matches `/^\/health/` and skips authentication on a path that
+was never meant to be open. A regexp anchored with `^` or `$` is warned about when the first request
+is served.
 
 Or using opt-in configuration:
 

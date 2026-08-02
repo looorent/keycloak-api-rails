@@ -16,7 +16,7 @@ RSpec.describe "Integration with real Keycloak server" do
     KeycloakApiRails.configure do |config|
       config.server_url = KeycloakHelper::KEYCLOAK_URL
       config.realm_id = KeycloakHelper::REALM_NAME
-      config.skip_paths = { get: [/^\/skip/] }
+      config.skip_paths = { get: [/\A\/skip/] }
     end
     # Ensure public key resolver is the real one, not stubbed
     KeycloakApiRails.public_key_resolver = nil

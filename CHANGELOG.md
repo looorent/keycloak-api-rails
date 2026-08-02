@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * The number of realms whose public keys are cached is now bounded. 
 * A token was verified with whichever algorithm its `alg` header named. New `allowed_algorithms` option, defaulting to the asymmetric algorithms Keycloak signs with, and narrowable to the one of the realm. Symmetric algorithms are refused.
 
+* A `skip_paths` regexp anchored with `^` or `$` is warned about: in Ruby they match the beginning and the end of a line, and `PATH_INFO` is URL-decoded, so `"/private\n/health"` matches `/^\/health/` and skips authentication. Anchor with `\A` and `\z`.
+
 ### Fixed
 
 * A `401` carries the `WWW-Authenticate: Bearer` header RFC 6750 requires of a resource protected by a Bearer token. A request carrying no token at all gets the bare challenge; any other gets `error="invalid_token"` and the reason it was refused.

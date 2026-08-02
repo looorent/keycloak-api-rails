@@ -139,8 +139,18 @@ module KeycloakApiRails
           logger&.warn("KeycloakApiRails: 'skip_paths[#{method.inspect}]' declares #{discarded.map(&:inspect).join(', ')}, which are not regexps. They are ignored, and the paths they were meant to open keep being authenticated.")
         end
 
+        line_anchored = regexps.select { |regexp| line_anchored?(regexp) }
+        unless line_anchored.empty?
+          logger&.warn("KeycloakApiRails: 'skip_paths[#{method.inspect}]' declares #{line_anchored.map(&:inspect).join(', ')}, anchored with '^' or '$'. In Ruby those match the beginning and the end of a line, not of the path: \"/private\\n/health\" matches /^\\/health/ and skips authentication. Anchor with '\\A' and '\\z'.")
+        end
+
         normalized[method.to_s.upcase] = regexps
       end
+    end
+
+    # Escaped pairs are dropped first, so that '\^' does not count and '[^/]' is read as a class.
+    def line_anchored?(regexp)
+      regexp.source.gsub(/\\./, "").gsub(/\[[^\]]*\]/, "").match?(/[\^$]/)
     end
 
     def should_skip?(method, path)

@@ -328,6 +328,59 @@ RSpec.describe KeycloakApiRails::Middleware do
     end
   end
 
+  describe "when 'skip_paths' anchors a path with '^' or '$'" do
+    def call_path(path)
+      @response = app.call(env_for("/things").merge("PATH_INFO" => path))
+    end
+
+    it "warns that those anchors match a line, not the path" do
+      logger = ::Logger.new(warnings = StringIO.new)
+      KeycloakApiRails.config.logger    = logger
+      KeycloakApiRails.config.skip_paths = { get: [%r{^/health}] }
+
+      call("/health/ready")
+
+      expect(warnings.string).to include "skip_paths[:get]"
+      expect(warnings.string).to include "Anchor with"
+    end
+
+    it "does not warn about a path anchored with '\\A' and '\\z'" do
+      logger = ::Logger.new(warnings = StringIO.new)
+      KeycloakApiRails.config.logger    = logger
+      KeycloakApiRails.config.skip_paths = { get: [%r{\A/health}] }
+
+      call("/health/ready")
+
+      expect(warnings.string).to_not include "Anchor with"
+    end
+
+    it "does not read the '^' of a character class as an anchor" do
+      logger = ::Logger.new(warnings = StringIO.new)
+      KeycloakApiRails.config.logger    = logger
+      KeycloakApiRails.config.skip_paths = { get: [%r{\A/health/[^/]+\z}] }
+
+      call("/health/ready")
+
+      expect(warnings.string).to_not include "Anchor with"
+    end
+
+    it "opens a path it was never meant to open" do
+      KeycloakApiRails.config.skip_paths = { get: [%r{^/health}] }
+
+      call_path("/private\n/health")
+
+      expect(status).to eq 200
+    end
+
+    it "keeps authenticating it once anchored with '\\A'" do
+      KeycloakApiRails.config.skip_paths = { get: [%r{\A/health}] }
+
+      call_path("/private\n/health")
+
+      expect(status).to eq 401
+    end
+  end
+
   # 'validate!' rejects such a configuration when a Rails application boots. A Rack application
   # running without Rails never calls it, so the paths have to keep being authenticated here.
   describe "when 'skip_paths' declares its paths as Strings" do
