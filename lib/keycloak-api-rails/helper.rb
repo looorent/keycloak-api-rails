@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module KeycloakApiRails
   class Helper
 
@@ -76,15 +78,18 @@ module KeycloakApiRails
     end
 
     def self.assign_resource_roles(env, token)
-      env[RESOURCE_ROLES_KEY] = token.fetch("resource_access", {}).inject({}) do |resource_roles, (name, resource_attributes)|
+      env[RESOURCE_ROLES_KEY] = token.fetch("resource_access", {}).each_with_object({}) do |(name, resource_attributes), resource_roles|
         resource_roles[name] = resource_attributes.fetch("roles", [])
-        resource_roles
       end
     end
 
     def self.assign_current_user_custom_attributes(env, token, attribute_names)
-      names = Array(attribute_names).map(&:to_s)
-      env[CURRENT_USER_ATTRIBUTES] = token.select { |key, _value| names.include?(key) }
+      attributes = {}
+      Array(attribute_names).each do |name|
+        name_str = name.to_s
+        attributes[name_str] = token[name_str] if token.key?(name_str)
+      end
+      env[CURRENT_USER_ATTRIBUTES] = attributes
     end
 
     def self.current_user_custom_attributes(env)

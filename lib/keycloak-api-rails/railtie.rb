@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module KeycloakApiRails
   class Railtie < Rails::Railtie
     railtie_name :keycloak_api_rails

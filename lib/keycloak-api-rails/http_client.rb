@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module KeycloakApiRails
   class HTTPError < StandardError
     attr_reader :status

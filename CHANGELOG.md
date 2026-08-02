@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Performance
+
+* Added `# frozen_string_literal: true` to all ruby files and optimized Hot Path methods in `Service` and `Helper` (e.g., using `Regexp#match?`, avoiding redundant String-to-Symbol conversions) to significantly reduce CPU usage and memory allocations per request.
+
 ### Added
 
 * Multi-tenancy support: `realm_id` can now be a String, an Array of Strings, or a Proc (e.g., `->(env) { ... }`) that evaluates to a String or Array of Strings, allowing dynamic realm resolution per request.

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module KeycloakApiRails
   class PublicKeyCachedResolver
     FAILED_REFRESH_RETRY_DELAY_IN_SECONDS = 10

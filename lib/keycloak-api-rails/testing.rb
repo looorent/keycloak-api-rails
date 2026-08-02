@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # Test helpers for the applications that authenticate their requests with this library.
 #
 # This file is *not* loaded by "keycloak-api-rails": it has to be required explicitly, so that

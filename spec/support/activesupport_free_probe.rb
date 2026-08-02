@@ -139,7 +139,7 @@ configuration.skip_paths = { "GET" => [%r{^/health}] }
 skipping_service = KeycloakApiRails::Service.new(nil)
 {
   ["GET", "/health/ready"] => true,
-  [:get, "/health/ready"]  => true,
+  ["GET", "/health/ready"]  => true,
   ["GET", "/things"]       => false,
   ["POST", "/health"]      => false,
 }.each do |(method, path), expected|

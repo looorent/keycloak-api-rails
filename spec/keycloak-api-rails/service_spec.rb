@@ -383,7 +383,7 @@ RSpec.describe KeycloakApiRails::Service do
     end
 
     context "when method does not match the configuration" do
-      let(:method) { :put }
+      let(:method) { "PUT" }
       let(:path)   { "/skip" }
       it "should return true" do
         expect(@result).to be true
@@ -391,7 +391,7 @@ RSpec.describe KeycloakApiRails::Service do
     end
 
     context "when path does not match the configuration" do
-      let(:method) { :get }
+      let(:method) { "GET" }
       let(:path)   { "/do-not-skip" }
       it "should return true" do
         expect(@result).to be true
@@ -399,7 +399,7 @@ RSpec.describe KeycloakApiRails::Service do
     end
 
     context "when method [get] and path do match the configuration" do
-      let(:method) { :get }
+      let(:method) { "GET" }
       let(:path)   { "/skip" }
       it "should return false" do
         expect(@result).to be false
@@ -408,7 +408,7 @@ RSpec.describe KeycloakApiRails::Service do
 
 
     context "when method [post] and path do match the configuration" do
-      let(:method) { :get }
+      let(:method) { "GET" }
       let(:path)   { "/skip" }
       it "should return false" do
         expect(@result).to be false
@@ -416,7 +416,7 @@ RSpec.describe KeycloakApiRails::Service do
     end
 
     context "when the request is preflight" do
-      let(:method)  { :options }
+      let(:method)  { "OPTIONS" }
       let(:headers) { { "HTTP_ACCESS_CONTROL_REQUEST_METHOD" => ["Authorization"] } }
       let(:path)    { "/do-not-skip" }
       it "should return false" do

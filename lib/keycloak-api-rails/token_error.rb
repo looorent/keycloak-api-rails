@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module KeycloakApiRails
   class TokenError < StandardError
     attr_reader :token, :reason, :original_error

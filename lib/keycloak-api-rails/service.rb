@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'base64'
 module KeycloakApiRails
   class MissingPublicKeysError < StandardError; end
@@ -37,7 +39,7 @@ module KeycloakApiRails
     end
 
     def extract_realm_from_token(token)
-      payload_segment = token.split('.')[1]
+      payload_segment = token.split('.', 3)[1]
       return nil unless payload_segment
 
       decoded_payload = Base64.urlsafe_decode64(payload_segment)
@@ -126,18 +128,17 @@ module KeycloakApiRails
           logger&.warn("KeycloakApiRails: 'skip_paths[#{method.inspect}]' declares #{discarded.map(&:inspect).join(', ')}, which are not regexps. They are ignored, and the paths they were meant to open keep being authenticated.")
         end
 
-        normalized[method.to_s.downcase.to_sym] = regexps
+        normalized[method.to_s.upcase] = regexps
       end
     end
 
     def should_skip?(method, path)
-      skip_paths = @skip_paths[method&.to_s&.downcase&.to_sym]
-      !skip_paths.nil? && skip_paths.any? { |skip_path| skip_path.match(path) }
+      skip_paths = @skip_paths[method]
+      !skip_paths.nil? && skip_paths.any? { |skip_path| skip_path.match?(path) }
     end
 
     def is_preflight?(method, headers)
-      method_symbol = method&.to_s&.downcase&.to_sym
-      method_symbol == :options && !headers["HTTP_ACCESS_CONTROL_REQUEST_METHOD"].nil?
+      method == "OPTIONS" && !headers["HTTP_ACCESS_CONTROL_REQUEST_METHOD"].nil?
     end
 
     def expired?(token)
