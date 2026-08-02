@@ -20,6 +20,8 @@ module KeycloakApiRails
 
     def find_public_keys
       @mutex.synchronize do
+        raise @last_refresh_error if refresh_recently_failed_without_any_cache?
+
         refresh_public_keys if public_keys_are_outdated?
         @cached_public_keys
       end
@@ -31,11 +33,19 @@ module KeycloakApiRails
       @cached_public_keys             = @resolver.find_public_keys
       @cached_public_key_retrieved_at = Time.now
       @last_refresh_failure_at        = nil
+      @last_refresh_error             = nil
     rescue StandardError => e
+      @last_refresh_failure_at = Time.now
+      @last_refresh_error      = e
       raise if @cached_public_keys.nil?
 
-      @last_refresh_failure_at = Time.now
       @logger&.warn("KeycloakApiRails: could not refresh the public keys (#{e.class}: #{e.message}). Keeping the ones retrieved at #{@cached_public_key_retrieved_at}.")
+    end
+
+    def refresh_recently_failed_without_any_cache?
+      @cached_public_keys.nil? &&
+        !@last_refresh_failure_at.nil? &&
+        Time.now <= @last_refresh_failure_at + FAILED_REFRESH_RETRY_DELAY_IN_SECONDS
     end
 
     def public_keys_are_outdated?

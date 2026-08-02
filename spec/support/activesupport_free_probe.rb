@@ -65,7 +65,7 @@ assert("Authentication can be included in a class without helper_method") do
 end
 assert("Authentication keeps its methods protected") do
   KeycloakApiRails::Authentication.protected_instance_methods.sort ==
-    %i[authentication_failed authentication_succeeded keycloak_authenticate]
+    %i[authentication_failed authentication_succeeded authentication_unavailable keycloak_authenticate]
 end
 
 ### Helper#read_token_from_query_string -- used to be `present?` and `second`

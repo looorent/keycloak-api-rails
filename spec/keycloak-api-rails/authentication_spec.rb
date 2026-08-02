@@ -43,6 +43,7 @@ describe KeycloakApiRails::Authentication do
       expect(KeycloakApiRails::Authentication.protected_instance_methods).to match_array %i[
         keycloak_authenticate
         authentication_failed
+        authentication_unavailable
         authentication_succeeded
       ]
     end

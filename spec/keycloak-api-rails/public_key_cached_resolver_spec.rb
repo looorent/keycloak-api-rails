@@ -137,6 +137,45 @@ RSpec.describe KeycloakApiRails::Service do
         it "propagates the error rather than answering without a key" do
           expect { resolver.find_public_keys }.to raise_error KeycloakApiRails::HTTPError
         end
+
+        it "does not call Keycloak again on every request" do
+          5.times { expect { resolver.find_public_keys }.to raise_error KeycloakApiRails::HTTPError }
+
+          expect(keycloak.calls).to eq 1
+        end
+
+        it "keeps raising the error of the last attempt while it does not call Keycloak" do
+          expect { resolver.find_public_keys }.to raise_error KeycloakApiRails::HTTPError, "Keycloak is unreachable"
+          expect { resolver.find_public_keys }.to raise_error KeycloakApiRails::HTTPError, "Keycloak is unreachable"
+        end
+
+        it "calls Keycloak again once the retry delay has elapsed" do
+          expect { resolver.find_public_keys }.to raise_error KeycloakApiRails::HTTPError
+
+          Timecop.freeze(Time.now + KeycloakApiRails::PublicKeyCachedResolver::FAILED_REFRESH_RETRY_DELAY_IN_SECONDS + 1)
+          expect { resolver.find_public_keys }.to raise_error KeycloakApiRails::HTTPError
+
+          expect(keycloak.calls).to eq 2
+        end
+
+        it "serves the keys again once Keycloak answers" do
+          expect { resolver.find_public_keys }.to raise_error KeycloakApiRails::HTTPError
+
+          Timecop.freeze(Time.now + KeycloakApiRails::PublicKeyCachedResolver::FAILED_REFRESH_RETRY_DELAY_IN_SECONDS + 1)
+          resolver.instance_variable_set(:@resolver, KeycloakApiRails::ControllablePublicKeyResolverStub.new("the-public-keys"))
+
+          expect(resolver.find_public_keys).to eq "the-public-keys"
+        end
+
+        it "downloads the keys once when several threads ask at the same time" do
+          slow = KeycloakApiRails::ControllablePublicKeyResolverStub.new("the-public-keys", delay: 0.05)
+          slow.become_unreachable!
+          resolver.instance_variable_set(:@resolver, slow)
+
+          Array.new(10) { Thread.new { resolver.find_public_keys rescue nil } }.map(&:join)
+
+          expect(slow.calls).to eq 1
+        end
       end
     end
 

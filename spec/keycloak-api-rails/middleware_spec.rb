@@ -218,6 +218,64 @@ RSpec.describe KeycloakApiRails::Middleware do
     end
   end
 
+  describe "when no token can be verified at all" do
+    let(:keycloak) { KeycloakApiRails::ControllablePublicKeyResolverStub.new("the-public-keys") }
+
+    before(:each) do
+      keycloak.become_unreachable!
+      KeycloakApiRails.public_key_resolver = keycloak
+    end
+
+    it "answers a 503 rather than letting the error escape as a 500" do
+      call("/things", headers: authorization_headers)
+
+      expect(status).to eq 503
+      expect(error).to eq "Authentication is temporarily unavailable"
+    end
+
+    it "tells the client when to retry" do
+      call("/things", headers: authorization_headers)
+
+      expect(headers["retry-after"]).to eq KeycloakApiRails::PublicKeyCachedResolver::FAILED_REFRESH_RETRY_DELAY_IN_SECONDS.to_s
+    end
+
+    it "only answers lowercase header names, as Rack 3 requires" do
+      call("/things", headers: authorization_headers)
+
+      expect(headers.keys).to eq headers.keys.map(&:downcase)
+    end
+
+    it "satisfies Rack::Lint" do
+      skip "Rack::Lint checks the case of the header names from Rack 3 on" unless rack_3?
+
+      expect {
+        Rack::Lint.new(app).call(env_for("/things", headers: authorization_headers))
+      }.to_not raise_error
+    end
+
+    it "does not call the downstream application" do
+      call("/things", headers: authorization_headers)
+
+      expect(@downstream_env).to be_nil
+    end
+
+    # The outage says nothing about a request that carries no token at all.
+    it "still answers a 401 to a request carrying no token" do
+      call("/things")
+
+      expect(status).to eq 401
+      expect(error).to eq "No JWT token provided"
+    end
+
+    it "still serves the paths that need no authentication" do
+      KeycloakApiRails.config.skip_paths = { get: [%r{\A/health}] }
+
+      call("/health/ready")
+
+      expect(status).to eq 200
+    end
+  end
+
   describe "when the request does not need to be authenticated" do
     it "skips a path declared in 'skip_paths'" do
       KeycloakApiRails.config.skip_paths = { get: [%r{^/health}] }

@@ -19,11 +19,19 @@ module KeycloakApiRails
       authentication_succeeded(env, decoded_token)
     rescue TokenError => e
       authentication_failed(e.message)
+    rescue KeycloakApiRails::HTTPError, KeycloakApiRails::MissingPublicKeysError => e
+      authentication_unavailable(e)
     end
 
     def authentication_failed(message)
       KeycloakApiRails.logger.info(message)
       render status: :unauthorized, json: { error: message }
+    end
+
+    def authentication_unavailable(error)
+      KeycloakApiRails.logger.error("KeycloakApiRails: no token can be verified. #{error.class}: #{error.message}")
+      response.headers["Retry-After"] = KeycloakApiRails::PublicKeyCachedResolver::FAILED_REFRESH_RETRY_DELAY_IN_SECONDS.to_s
+      render status: :service_unavailable, json: { error: "Authentication is temporarily unavailable" }
     end
 
     def authentication_succeeded(env, decoded_token)

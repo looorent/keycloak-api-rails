@@ -16,6 +16,9 @@ module KeycloakApiRails
         rescue TokenError => e
           logger.debug("The error causing the Token to fail: #{e.original_error&.message || e.message}")
           return authentication_failed(e.message)
+        rescue HTTPError, MissingPublicKeysError => e
+          logger.error("KeycloakApiRails: no token can be verified for #{method} : #{path}. #{e.class}: #{e.message}")
+          return authentication_unavailable
         end
       else
         logger.debug("Skip authentication for #{method} : #{path}")
@@ -35,6 +38,13 @@ module KeycloakApiRails
     def authentication_failed(message)
       # Rack 3 requires header names to be lowercase.
       [401, { "content-type" => "application/json" }, [{ error: message }.to_json]]
+    end
+
+    def authentication_unavailable
+      [503,
+       { "content-type" => "application/json",
+         "retry-after"  => PublicKeyCachedResolver::FAILED_REFRESH_RETRY_DELAY_IN_SECONDS.to_s },
+       [{ error: "Authentication is temporarily unavailable" }.to_json]]
     end
 
     def service

@@ -20,6 +20,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `custom_attributes` holding something else than a claim name is reported by `Configuration#validate!`, instead of being silently read from no token.
 * `KeycloakApiRails.configure` discards the service, the public key resolver and the HTTP client it had memoized
 
+### Availability
+
+* A request whose token cannot be verified at all, Keycloak being unreachable and no public key having ever been retrieved, is answered a `503` carrying a `Retry-After` header. `KeycloakApiRails::HTTPError` and `KeycloakApiRails::MissingPublicKeysError` used to escape the middleware, and `keycloak_authenticate`, as a `500`: an outage of Keycloak was reported as a bug of the application. A request carrying no token at all is still answered a `401`, and the paths of `skip_paths` are still served.
+* With nothing cached, a Keycloak that is down was called again by every single request, one at a time behind the mutex of the resolver, each waiting for `http_open_timeout` and `http_read_timeout` to elapse: ten concurrent requests held ten threads for a hundred seconds. It is now called once per `FAILED_REFRESH_RETRY_DELAY_IN_SECONDS`, and the error of the last attempt is raised straight away in between.
+
 ## [2.0.0] - 2026-08-01
 
 ### Breaking changes
