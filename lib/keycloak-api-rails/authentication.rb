@@ -20,6 +20,7 @@ module KeycloakApiRails
       decoded_token = KeycloakApiRails.service.decode_and_verify(token)
       authentication_succeeded(env, decoded_token)
     rescue TokenError => e
+      response.headers["WWW-Authenticate"] = e.challenge
       authentication_failed(e.message)
     rescue KeycloakApiRails::HTTPError, KeycloakApiRails::MissingPublicKeysError => e
       authentication_unavailable(e)

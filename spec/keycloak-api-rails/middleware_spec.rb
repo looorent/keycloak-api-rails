@@ -204,6 +204,25 @@ RSpec.describe KeycloakApiRails::Middleware do
       expect(@downstream_env).to be_nil
     end
 
+    # RFC 6750: a request carrying no credentials is answered the bare challenge, with no error code.
+    it "challenges a request that carries no token" do
+      call("/things")
+
+      expect(headers["www-authenticate"]).to eq "Bearer"
+    end
+
+    it "challenges a request whose token is not accepted, naming the error" do
+      call("/things", headers: authorization_headers(expires_at: Time.now - 3600))
+
+      expect(headers["www-authenticate"]).to eq 'Bearer error="invalid_token", error_description="JWT token is expired"'
+    end
+
+    it "quotes nothing that would break the challenge" do
+      call("/things", headers: { "HTTP_AUTHORIZATION" => "Bearer not-a-token" })
+
+      expect(headers["www-authenticate"].scan('"').size).to eq 4
+    end
+
     it "only answers lowercase header names, as Rack 3 requires" do
       call("/things")
 

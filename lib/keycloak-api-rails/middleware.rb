@@ -17,7 +17,7 @@ module KeycloakApiRails
           authenticate(env)
         rescue TokenError => e
           logger.debug("The error causing the Token to fail: #{e.original_error&.message || e.message}")
-          return authentication_failed(e.message)
+          return authentication_failed(e)
         rescue HTTPError, MissingPublicKeysError => e
           logger.error("KeycloakApiRails: no token can be verified for #{method} : #{path}. #{e.class}: #{e.message}")
           return authentication_unavailable
@@ -37,9 +37,12 @@ module KeycloakApiRails
       Helper.assign_token(env, decoded_token, config.custom_attributes)
     end
 
-    def authentication_failed(message)
+    def authentication_failed(error)
       # Rack 3 requires header names to be lowercase.
-      [401, { "content-type" => "application/json" }, [{ error: message }.to_json]]
+      [401,
+       { "content-type"     => "application/json",
+         "www-authenticate" => error.challenge },
+       [{ error: error.message }.to_json]]
     end
 
     def authentication_unavailable

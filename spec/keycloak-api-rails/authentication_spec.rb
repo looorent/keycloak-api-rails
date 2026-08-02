@@ -73,5 +73,26 @@ describe KeycloakApiRails::Authentication do
       expect(controller).to receive(:authentication_succeeded)
       controller.keycloak_authenticate
     end
+
+    context "when the token is not accepted" do
+      before do
+        controller.set_response!(ActionDispatch::Response.new)
+        allow(controller).to receive(:render)
+      end
+
+      it "challenges the client, naming the error" do
+        controller.keycloak_authenticate
+
+        expect(controller.response.headers["WWW-Authenticate"]).to eq 'Bearer error="invalid_token", error_description="Wrong JWT Format"'
+      end
+
+      it "challenges a request that carries no token with no error code" do
+        allow(controller).to receive(:request).and_return(double("request", env: { "REQUEST_METHOD" => :get }))
+
+        controller.keycloak_authenticate
+
+        expect(controller.response.headers["WWW-Authenticate"]).to eq "Bearer"
+      end
+    end
   end
 end

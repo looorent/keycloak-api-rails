@@ -11,6 +11,15 @@ module KeycloakApiRails
       @original_error = original_error
     end
 
+    # RFC 6750: a request that carried no credentials at all gets the bare challenge, no error code.
+    def challenge
+      if reason == :no_token
+        "Bearer"
+      else
+        %(Bearer error="invalid_token", error_description="#{message.gsub(/["\\]/, '')}")
+      end
+    end
+
     def self.verification_failed(token, original_error)
       new(token, :verification_failed, "Failed to verify JWT token", original_error)
     end
