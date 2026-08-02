@@ -6,7 +6,7 @@ RSpec.describe KeycloakApiRails::Service do
   let!(:resolver)             { KeycloakApiRails::PublicKeyCachedResolver.new(server_url, realm_id, public_key_cache_ttl) }
 
   before(:each) do
-    resolver.instance_variable_set(:@resolver, KeycloakApiRails::PublicKeyResolverStub.new)
+    resolver.send(:cache_for, "pouet").instance_variable_set(:@resolver, KeycloakApiRails::PublicKeyResolverStub.new)
     now = Time.local(2018, 1, 9, 12, 0, 0)
     Timecop.freeze(now)
   end
@@ -81,7 +81,7 @@ RSpec.describe KeycloakApiRails::Service do
       let(:keycloak) { KeycloakApiRails::ControllablePublicKeyResolverStub.new("the-public-keys") }
 
       before(:each) do
-        resolver.instance_variable_set(:@resolver, keycloak)
+        resolver.send(:cache_for, "pouet").instance_variable_set(:@resolver, keycloak)
       end
 
       context "and public keys have already been retrieved" do
@@ -122,7 +122,7 @@ RSpec.describe KeycloakApiRails::Service do
         it "serves the fresh keys again once Keycloak answers" do
           resolver.find_public_keys
           Timecop.freeze(Time.now + KeycloakApiRails::PublicKeyCachedResolver::FAILED_REFRESH_RETRY_DELAY_IN_SECONDS + 1)
-          resolver.instance_variable_set(:@resolver, KeycloakApiRails::ControllablePublicKeyResolverStub.new("the-new-public-keys"))
+          resolver.send(:cache_for, "pouet").instance_variable_set(:@resolver, KeycloakApiRails::ControllablePublicKeyResolverStub.new("the-new-public-keys"))
 
           expect(resolver.find_public_keys).to eq "the-new-public-keys"
         end
@@ -162,7 +162,7 @@ RSpec.describe KeycloakApiRails::Service do
           expect { resolver.find_public_keys }.to raise_error KeycloakApiRails::HTTPError
 
           Timecop.freeze(Time.now + KeycloakApiRails::PublicKeyCachedResolver::FAILED_REFRESH_RETRY_DELAY_IN_SECONDS + 1)
-          resolver.instance_variable_set(:@resolver, KeycloakApiRails::ControllablePublicKeyResolverStub.new("the-public-keys"))
+          resolver.send(:cache_for, "pouet").instance_variable_set(:@resolver, KeycloakApiRails::ControllablePublicKeyResolverStub.new("the-public-keys"))
 
           expect(resolver.find_public_keys).to eq "the-public-keys"
         end
@@ -170,7 +170,7 @@ RSpec.describe KeycloakApiRails::Service do
         it "downloads the keys once when several threads ask at the same time" do
           slow = KeycloakApiRails::ControllablePublicKeyResolverStub.new("the-public-keys", delay: 0.05)
           slow.become_unreachable!
-          resolver.instance_variable_set(:@resolver, slow)
+          resolver.send(:cache_for, "pouet").instance_variable_set(:@resolver, slow)
 
           Array.new(10) { Thread.new { resolver.find_public_keys rescue nil } }.map(&:join)
 
@@ -183,7 +183,7 @@ RSpec.describe KeycloakApiRails::Service do
       let(:keycloak) { KeycloakApiRails::ControllablePublicKeyResolverStub.new("the-public-keys", delay: 0.05) }
 
       before(:each) do
-        resolver.instance_variable_set(:@resolver, keycloak)
+        resolver.send(:cache_for, "pouet").instance_variable_set(:@resolver, keycloak)
       end
 
       def resolve_concurrently(thread_count)

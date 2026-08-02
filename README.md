@@ -61,7 +61,7 @@ All options have a default value. However, all of them can be changed in your in
 | Option | Default Value | Type | Required? | Description  | Example |
 | ---- | ----- | ------ | ----- | ------ | ----- |
 | `server_url` | `nil`| String | Required | The base url where your Keycloak server is located. This value can be retrieved in your Keycloak client configuration. | `auth:8080` |
-| `realm_id` | `nil`| String | Required | Realm's name (not id, actually) | `master` |
+| `realm_id` | `nil`| String, Array or Proc | Required | Realm's name(s) (not id, actually). Can be a single String, an Array of Strings for multiple tenants, or a Proc for dynamic validation. | `"master"` or `["tenant1", "tenant2"]` |
 | `logger` | `Logger.new(STDOUT)`| Logger | Optional | The logger used by `keycloak-api-rails` | `Rails.logger` | 
 | `skip_paths` | `{}`| Hash of methods and paths regexp | Optional | Paths whose token must not be validated. Each path must be a `Regexp`. A String is refused when the application boots: `String#match` compiles its argument into a regexp, so the path of the request would become the pattern and other routes would skip authentication | `{ get: [/^\/health\/.+/] }`| 
 | `opt_in` | `false` | Boolean | Optional | When false, every request is validated by the middleware, except the ones matching `skip_paths`. When true, no middleware validates anything and authentication must be requested explicitly, by calling `keycloak_authenticate` from a controller | `true`
@@ -128,6 +128,27 @@ Keycloak only adds an API to the `aud` claim of a token once that API is declare
 
 `config.verify_not_before = true` additionally rejects a token whose `nbf` claim is in the future.
 It is disabled by default because a clock skew between Keycloak and the API rejects valid tokens.
+
+## Multi-tenancy (Multiple Realms)
+
+The library natively supports multi-tenancy by validating tokens issued by multiple Keycloak realms. 
+Instead of a static string, you can configure `realm_id` with an Array or a Proc. The library will dynamically extract the realm from the token's `iss` claim, check if it is permitted, and fetch the appropriate public keys for that specific realm.
+
+Using an Array of allowed realms:
+```ruby
+KeycloakApiRails.configure do |config|
+  config.server_url = ENV["KEYCLOAK_SERVER_URL"]
+  config.realm_id   = ["master", "tenant-1", "tenant-2"]
+end
+```
+
+Using a Proc for dynamic validation (e.g., querying the database):
+```ruby
+KeycloakApiRails.configure do |config|
+  config.server_url = ENV["KEYCLOAK_SERVER_URL"]
+  config.realm_id   = ->(realm) { Tenant.exists?(name: realm) }
+end
+```
 
 ## Use cases
 
@@ -303,7 +324,3 @@ scoped RubyGems credential.
 
 The workflow then checks that the tag matches `KeycloakApiRails::VERSION`, runs the tests, builds the gem
 and pushes it. It only publishes tags starting with `v`.
-
-## Next developments
-
-* Manage multiple realms

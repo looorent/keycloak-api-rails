@@ -163,17 +163,18 @@ end
 ### PublicKeyCachedResolver -- used to be `seconds`
 ttl = 86400
 resolver = KeycloakApiRails::PublicKeyCachedResolver.new(nil, "a-realm", ttl)
+cache = resolver.send(:cache_for, "a-realm")
 assert("PublicKeyCachedResolver considers an empty cache as outdated") do
-  resolver.send(:public_keys_are_outdated?) == true
+  cache.send(:public_keys_are_outdated?, ttl) == true
 end
-resolver.instance_variable_set(:@cached_public_keys, "a-public-key")
-resolver.instance_variable_set(:@cached_public_key_retrieved_at, Time.now - (ttl - 10))
+cache.instance_variable_set(:@cached_public_keys, "a-public-key")
+cache.instance_variable_set(:@cached_public_key_retrieved_at, Time.now - (ttl - 10))
 assert("PublicKeyCachedResolver keeps a cache that is within its TTL") do
-  resolver.send(:public_keys_are_outdated?) == false
+  cache.send(:public_keys_are_outdated?, ttl) == false
 end
-resolver.instance_variable_set(:@cached_public_key_retrieved_at, Time.now - (ttl + 10))
+cache.instance_variable_set(:@cached_public_key_retrieved_at, Time.now - (ttl + 10))
 assert("PublicKeyCachedResolver invalidates a cache that outlived its TTL") do
-  resolver.send(:public_keys_are_outdated?) == true
+  cache.send(:public_keys_are_outdated?, ttl) == true
 end
 
 assert("ActiveSupport has not been loaded while exercising the library") { !defined?(ActiveSupport) }

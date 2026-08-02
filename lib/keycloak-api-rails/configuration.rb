@@ -24,7 +24,7 @@ module KeycloakApiRails
       errors = []
 
       errors.push("'server_url' must be a String or nil, got #{server_url.inspect}") unless server_url.nil? || server_url.is_a?(String)
-      errors.push("'realm_id' must be a String or nil, got #{realm_id.inspect}") unless realm_id.nil? || realm_id.is_a?(String)
+      errors.push("'realm_id' must be a String, an Array of Strings, a Proc, or nil, got #{realm_id.inspect}") unless valid_realm_id?(realm_id)
       errors.push("'logger' must respond to #{LOGGER_METHODS.join(', ')}") unless LOGGER_METHODS.all? { |method| logger.respond_to?(method) }
       errors.push("'opt_in' must be true or false, got #{opt_in.inspect}") unless boolean?(opt_in)
       errors.push("'verify_not_before' must be true or false, got #{verify_not_before.inspect}") unless boolean?(verify_not_before)
@@ -104,7 +104,20 @@ module KeycloakApiRails
     end
 
     def missing?(value)
-      value.nil? || value.to_s.strip.empty?
+      if value.is_a?(Array)
+        value.empty?
+      elsif value.is_a?(String)
+        value.strip.empty?
+      else
+        value.nil?
+      end
+    end
+
+    def valid_realm_id?(realm_id)
+      realm_id.nil? ||
+        realm_id.is_a?(String) ||
+        (realm_id.is_a?(Array) && realm_id.all? { |r| r.is_a?(String) }) ||
+        realm_id.respond_to?(:call)
     end
   end
 end

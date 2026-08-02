@@ -4,7 +4,7 @@ module KeycloakApiRails
       @public_key = public_key
     end
 
-    def find_public_keys
+    def find_public_keys(realm_id = nil)
       @public_key
     end
   end

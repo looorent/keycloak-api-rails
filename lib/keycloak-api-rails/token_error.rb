@@ -13,8 +13,12 @@ module KeycloakApiRails
       new(token, :verification_failed, "Failed to verify JWT token", original_error)
     end
 
-    def self.invalid_format(token, original_error)
+    def self.invalid_format(token, original_error = nil)
       new(token, :invalid_format, "Wrong JWT Format", original_error)
+    end
+
+    def self.invalid_realm(token)
+      new(token, :invalid_realm, "JWT token does not have a valid realm")
     end
 
     def self.no_token(token)

@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+* Multi-tenancy support: `realm_id` can now be a String, an Array of Strings, or a Proc (e.g., `->(env) { ... }`) that evaluates to a String or Array of Strings, allowing dynamic realm resolution per request.
+* The middleware now validates the token against the allowed realms. A token carrying an `iss` claim that does not match one of the expected realms will be rejected. New `KeycloakApiRails::TokenError` reason: `:invalid_realm`.
+* `PublicKeyCachedResolver` caches public keys per-realm, ensuring safe operation in a multi-tenant environment.
+
 ## [2.0.1] - 2026-08-02
 
 ### Security

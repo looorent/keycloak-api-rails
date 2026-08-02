@@ -33,7 +33,7 @@ module KeycloakApiRails
         @public_keys = public_keys
       end
 
-      def find_public_keys
+      def find_public_keys(realm_id = nil)
         @public_keys
       end
     end
@@ -84,6 +84,12 @@ module KeycloakApiRails
 
         payload["realm_access"]    = { "roles" => roles.map(&:to_s) } unless roles.nil? || roles.empty?
         payload["resource_access"] = build_resource_access(resource_roles) unless resource_roles.nil? || resource_roles.empty?
+
+        unless claims.key?(:iss) || claims.key?("iss")
+          config_realm_id = KeycloakApiRails.config.realm_id
+          realm_id = config_realm_id.is_a?(String) ? config_realm_id : "master"
+          payload["iss"] = File.join(KeycloakApiRails.config.server_url.to_s, "realms", realm_id)
+        end
 
         claims.each { |name, value| payload[name.to_s] = value }
 

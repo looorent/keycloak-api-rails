@@ -14,7 +14,7 @@ module KeycloakApiRails
       @unreachable = true
     end
 
-    def find_public_keys
+    def find_public_keys(realm_id = nil)
       @mutex.synchronize { @calls += 1 }
       sleep(@delay) if @delay > 0
       raise HTTPError, "Keycloak is unreachable" if @unreachable

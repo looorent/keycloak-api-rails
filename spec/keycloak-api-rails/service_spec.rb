@@ -3,25 +3,28 @@ RSpec.describe KeycloakApiRails::Service do
   let!(:private_key)  { OpenSSL::PKey::RSA.generate(2048) }
   let!(:public_key)   { private_key.public_key }
   let!(:key_resolver)  { KeycloakApiRails::PublicKeyCachedResolverStub.new(public_key) }
-  let!(:service)       { KeycloakApiRails::Service.new(key_resolver) }
+  let(:service)       { KeycloakApiRails::Service.new(key_resolver) }
   
   before(:each) do
+    KeycloakApiRails.config.server_url = "http://localhost:8080"
+    KeycloakApiRails.config.realm_id = "master"
     now = Time.local(2018, 1, 9, 12, 0, 0)
     Timecop.freeze(now)
   end
 
   after(:each) do
+    KeycloakApiRails.load_configuration
     Timecop.return
   end
 
   describe "#decode_and_verify" do
     def create_token(private_key, expiration_date, algorithm)
       claim = {
-        iss: "KeycloakApiRails",
+        iss: "http://localhost:8080/realms/master",
         exp: expiration_date,
         nbf: Time.local(2018, 1, 1, 0, 0, 0)
       }
-      jws = JSON::JWT.new(claim).sign(private_key, algorithm)
+      jws = JSON::JWT.new({"iss" => "http://localhost:8080/realms/master"}.merge(claim)).sign(private_key, algorithm)
       jws.to_s
     end
 
@@ -127,7 +130,7 @@ RSpec.describe KeycloakApiRails::Service do
 
   describe "#decode_and_verify claims" do
     let(:claims) { {} }
-    let(:token)  { JSON::JWT.new({ "exp" => (Time.now + 3600).to_i }.merge(claims)).sign(private_key, :RS256).to_s }
+    let(:token)  { JSON::JWT.new({"iss" => "http://localhost:8080/realms/master"}.merge({ "exp" => (Time.now + 3600).to_i }.merge(claims))).sign(private_key, :RS256).to_s }
 
     after(:each) do
       KeycloakApiRails.load_configuration
@@ -139,6 +142,7 @@ RSpec.describe KeycloakApiRails::Service do
     end
 
     def sign_raw_claims(claims)
+      claims = { "iss" => "http://localhost:8080/realms/master" }.merge(claims)
       header        = Base64.urlsafe_encode64(JSON.generate("alg" => "RS256", "typ" => "JWT"), padding: false)
       payload       = Base64.urlsafe_encode64(JSON.generate(claims), padding: false)
       signing_input = "#{header}.#{payload}"
@@ -149,7 +153,7 @@ RSpec.describe KeycloakApiRails::Service do
 
     describe "the 'exp' claim" do
       context "when the token carries none" do
-        let(:token) { JSON::JWT.new("sub" => "a-user").sign(private_key, :RS256).to_s }
+        let(:token) { JSON::JWT.new({"iss" => "http://localhost:8080/realms/master"}.merge("sub" => "a-user")).sign(private_key, :RS256).to_s }
 
         it "should raise an error :missing_claim" do
           expect {

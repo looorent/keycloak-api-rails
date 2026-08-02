@@ -1,3 +1,4 @@
+require 'base64'
 module KeycloakApiRails
   class MissingPublicKeysError < StandardError; end
 
@@ -17,16 +18,50 @@ module KeycloakApiRails
 
     def decode_and_verify(token)
       raise TokenError.no_token(token) if token.nil? || token.empty?
+      
+      parts = token.to_s.split('.')
+      raise TokenError.invalid_format(token) if parts.length < 3
 
-      public_keys = @key_resolver.find_public_keys
+      realm_id = extract_realm_from_token(token)
+      raise TokenError.invalid_realm(token) unless realm_allowed?(realm_id)
+      
+      public_keys = @key_resolver.find_public_keys(realm_id)
       
       if public_keys.nil?
         raise MissingPublicKeysError, "No Keycloak public key is available to verify the token" 
       end
 
       decoded_token = decode(token, public_keys)
-      verify_claims!(token, decoded_token)
+      verify_claims!(token, decoded_token, realm_id)
       decoded_token
+    end
+
+    def extract_realm_from_token(token)
+      payload_segment = token.split('.')[1]
+      return nil unless payload_segment
+
+      decoded_payload = Base64.urlsafe_decode64(payload_segment)
+      parsed_payload = JSON.parse(decoded_payload)
+      iss = parsed_payload['iss']
+      return nil unless iss
+
+      iss.split('/').last
+    rescue JSON::ParserError, ArgumentError
+      nil
+    end
+
+    def realm_allowed?(realm_id)
+      config_realm_id = KeycloakApiRails.config.realm_id
+      return true if config_realm_id.nil?
+      return false if realm_id.nil?
+
+      if config_realm_id.respond_to?(:call)
+        config_realm_id.call(realm_id)
+      elsif config_realm_id.is_a?(Array)
+        config_realm_id.include?(realm_id)
+      else
+        config_realm_id == realm_id
+      end
     end
 
     def read_token(uri, headers)
@@ -59,7 +94,7 @@ module KeycloakApiRails
     end
 
     # RFC 7519 requires 'exp' and 'nbf' to be NumericDates.
-    def verify_claims!(token, decoded_token)
+    def verify_claims!(token, decoded_token, realm_id)
       raise TokenError.missing_claim(token, "exp") unless decoded_token.key?("exp")
       raise TokenError.invalid_claim(token, "exp") unless decoded_token["exp"].is_a?(Numeric)
       raise TokenError.invalid_claim(token, "nbf") if not_before_is_invalid?(decoded_token)
@@ -67,6 +102,11 @@ module KeycloakApiRails
       raise TokenError.not_yet_valid(token)        if not_yet_valid?(decoded_token)
       raise TokenError.invalid_audience(token)     unless audience_valid?(decoded_token)
       raise TokenError.invalid_token_type(token)   unless token_type_valid?(decoded_token)
+
+      if KeycloakApiRails.config.server_url
+        expected_iss = File.join(KeycloakApiRails.config.server_url.to_s, "realms", realm_id.to_s)
+        raise TokenError.invalid_realm(token) unless decoded_token["iss"] == expected_iss
+      end
     end
 
     def not_before_is_invalid?(token)
