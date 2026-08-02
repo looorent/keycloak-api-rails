@@ -134,6 +134,15 @@ RSpec.describe KeycloakApiRails::Middleware do
       expect(error).to eq "JWT token has been issued for another audience"
     end
 
+    it "resolves the memoized service once, rather than once per use" do
+      allow(KeycloakApiRails).to receive(:service).and_call_original
+
+      call("/things", headers: authorization_headers(**token_options))
+
+      expect(status).to eq 200
+      expect(KeycloakApiRails).to have_received(:service).once
+    end
+
     it "does not let a TokenError raised by the application become a 401" do
       allow(downstream).to receive(:call).and_raise(KeycloakApiRails::TokenError.expired("another token"))
 

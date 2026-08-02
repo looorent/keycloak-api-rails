@@ -94,9 +94,7 @@ module KeycloakApiRails
     end
 
     def cache_for(realm_id)
-      @caches_mutex.synchronize do
-        @caches[realm_id] || create_cache(realm_id)
-      end
+      @caches[realm_id] || @caches_mutex.synchronize { @caches[realm_id] || create_cache(realm_id) }
     end
 
     def create_cache(realm_id)

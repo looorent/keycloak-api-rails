@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Performance
 
+* An authenticated request took four locks to read two memoized objects: `KeycloakApiRails.service`, resolved three times per request, and the per-realm key cache. They are read without locking once memoized, and the middleware resolves the service once. Worth 0.3 µs per request, against the 50 µs of the RSA verification below.
 * Every authenticated request verified the signature of its token twice: `JSON::JWT.decode` already verifies the one it is given a key for. One RSA verification per request instead of two.
 * Added `# frozen_string_literal: true` to all ruby files and optimized Hot Path methods in `Service` and `Helper` (e.g., using `Regexp#match?`, avoiding redundant String-to-Symbol conversions) to significantly reduce CPU usage and memory allocations per request.
 

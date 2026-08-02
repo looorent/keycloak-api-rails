@@ -23,6 +23,11 @@ module KeycloakApiRails
   # These objects are memoized lazily, on the first request each process serves -- which several
   # threads of a threaded server reach at the same time. A Monitor rather than a Mutex: the
   # memoizations nest, 'service' needing 'public_key_resolver', which needs 'http_client'.
+  #
+  # Once memoized they are read without taking it: the assignment publishes an object that is fully
+  # built, and MRI reads an instance variable atomically. A 'configure' running while requests are
+  # already being served may then be picked up one request late, which is one more reason for it to
+  # belong in an initializer.
   MONITOR = Monitor.new
 
   def self.configure
@@ -44,11 +49,11 @@ module KeycloakApiRails
   end
 
   def self.http_client
-    MONITOR.synchronize { @http_client ||= KeycloakApiRails::HTTPClient.new(config, logger) }
+    @http_client || MONITOR.synchronize { @http_client ||= KeycloakApiRails::HTTPClient.new(config, logger) }
   end
 
   def self.public_key_resolver
-    MONITOR.synchronize { @public_key_resolver ||= PublicKeyCachedResolver.from_configuration(http_client, config) }
+    @public_key_resolver || MONITOR.synchronize { @public_key_resolver ||= PublicKeyCachedResolver.from_configuration(http_client, config) }
   end
 
   # Mainly used by "keycloak-api-rails/testing" to validate tokens without a Keycloak server.
@@ -63,7 +68,7 @@ module KeycloakApiRails
   end
 
   def self.service
-    MONITOR.synchronize { @service ||= KeycloakApiRails::Service.new(public_key_resolver) }
+    @service || MONITOR.synchronize { @service ||= KeycloakApiRails::Service.new(public_key_resolver) }
   end
 
   def self.logger

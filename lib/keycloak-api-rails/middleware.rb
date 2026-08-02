@@ -8,13 +8,14 @@ module KeycloakApiRails
     end
 
     def call(env)
-      method = env["REQUEST_METHOD"]
-      path   = env["PATH_INFO"]
+      method  = env["REQUEST_METHOD"]
+      path    = env["PATH_INFO"]
+      service = KeycloakApiRails.service
 
       if service.need_middleware_authentication?(method, path, env)
         logger.debug("Start authentication for #{method} : #{path}")
         begin
-          authenticate(env)
+          authenticate(service, env)
         rescue TokenError => e
           logger.debug("The error causing the Token to fail: #{e.original_error&.message || e.message}")
           return authentication_failed(e)
@@ -31,7 +32,7 @@ module KeycloakApiRails
 
     private
 
-    def authenticate(env)
+    def authenticate(service, env)
       token         = service.read_token(Helper.request_uri(env), env)
       decoded_token = service.decode_and_verify(token)
       Helper.assign_token(env, decoded_token, config.custom_attributes)
@@ -50,10 +51,6 @@ module KeycloakApiRails
        { "content-type" => "application/json",
          "retry-after"  => PublicKeyCachedResolver::FAILED_REFRESH_RETRY_DELAY_IN_SECONDS.to_s },
        [{ error: "Authentication is temporarily unavailable" }.to_json]]
-    end
-
-    def service
-      KeycloakApiRails.service
     end
 
     def logger

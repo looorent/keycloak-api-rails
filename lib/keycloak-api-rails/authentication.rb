@@ -16,8 +16,9 @@ module KeycloakApiRails
       path   = env["PATH_INFO"]
 
       KeycloakApiRails.logger.debug("Start authentication for #{method} : #{path}")
-      token         = KeycloakApiRails.service.read_token(Helper.request_uri(env), env)
-      decoded_token = KeycloakApiRails.service.decode_and_verify(token)
+      service       = KeycloakApiRails.service
+      token         = service.read_token(Helper.request_uri(env), env)
+      decoded_token = service.decode_and_verify(token)
       authentication_succeeded(env, decoded_token)
     rescue TokenError => e
       response.headers["WWW-Authenticate"] = e.challenge
