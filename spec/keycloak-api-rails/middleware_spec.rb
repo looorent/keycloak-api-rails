@@ -71,6 +71,22 @@ RSpec.describe KeycloakApiRails::Middleware do
       expect(KeycloakApiRails::Helper.keycloak_token(@downstream_env)).to_not be_nil
     end
 
+    it "exposes the custom attributes declared as Strings" do
+      KeycloakApiRails.config.custom_attributes = ["tenant_id"]
+
+      call("/things", headers: authorization_headers(claims: { "tenant_id" => 42 }))
+
+      expect(KeycloakApiRails::Helper.current_user_custom_attributes(@downstream_env)).to eq({ "tenant_id" => 42 })
+    end
+
+    it "exposes the custom attributes declared as Symbols" do
+      KeycloakApiRails.config.custom_attributes = [:tenant_id]
+
+      call("/things", headers: authorization_headers(claims: { "tenant_id" => 42 }))
+
+      expect(KeycloakApiRails::Helper.current_user_custom_attributes(@downstream_env)).to eq({ "tenant_id" => 42 })
+    end
+
     # 'REQUEST_URI' is absent from a Rack::Test environment, which used to make the middleware
     # ignore the 'Authorization' header entirely.
     it "reads the header of a request whose environment carries no 'REQUEST_URI'" do

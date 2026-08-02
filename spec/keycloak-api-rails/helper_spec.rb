@@ -108,6 +108,37 @@ RSpec.describe KeycloakApiRails::Helper do
     end
   end
 
+  describe "#assign_current_user_custom_attributes" do
+    let(:token) { { "sub" => "a-user", "tenant_id" => 42, "department" => "sales" } }
+
+    def attributes_declared_as(attribute_names)
+      env = {}
+      KeycloakApiRails::Helper.assign_current_user_custom_attributes(env, token, attribute_names)
+      KeycloakApiRails::Helper.current_user_custom_attributes(env)
+    end
+
+    it "reads the claims declared as Strings" do
+      expect(attributes_declared_as(["tenant_id"])).to eq({ "tenant_id" => 42 })
+    end
+
+    it "reads the claims declared as Symbols" do
+      expect(attributes_declared_as([:tenant_id])).to eq({ "tenant_id" => 42 })
+    end
+
+    it "reads the claims of a declaration mixing both" do
+      expect(attributes_declared_as([:tenant_id, "department"])).to eq({ "tenant_id" => 42, "department" => "sales" })
+    end
+
+    it "reads no claim when none is declared" do
+      expect(attributes_declared_as([])).to eq({})
+      expect(attributes_declared_as(nil)).to eq({})
+    end
+
+    it "reads no claim the token does not carry" do
+      expect(attributes_declared_as([:not_a_claim_of_this_token])).to eq({})
+    end
+  end
+
   describe "#create_url_with_token" do
 
     let(:uri)   { "http://www.an-url.io" }

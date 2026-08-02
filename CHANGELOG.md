@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * With `verify_not_before` enabled, an `nbf` claim carried as null was read as an absent one, skipping the very check the option asks for. It is now rejected.
 * A token whose `exp` or `nbf` claim is not a number of seconds is answered a `401`, where `Time.at` used to raise a `TypeError` and answer a `500`. The 2.0.0 guard only checked that `exp` was present, not that it held a NumericDate. New `KeycloakApiRails::TokenError` reason: `:invalid_claim`.
 
+### Fixed
+
+* `custom_attributes` declared as Symbols, e.g. `[:tenant_id]`, matched no claim at all: those of a decoded token are keyed by String. Both forms are honoured.
+* `custom_attributes` holding something else than a claim name is reported by `Configuration#validate!`, instead of being silently read from no token.
+
 ## [2.0.0] - 2026-08-01
 
 ### Breaking changes

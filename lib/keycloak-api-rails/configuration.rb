@@ -29,7 +29,6 @@ module KeycloakApiRails
       errors.push("'opt_in' must be true or false, got #{opt_in.inspect}") unless boolean?(opt_in)
       errors.push("'verify_not_before' must be true or false, got #{verify_not_before.inspect}") unless boolean?(verify_not_before)
       errors.push("'allow_token_in_query_string' must be true or false, got #{allow_token_in_query_string.inspect}") unless boolean?(allow_token_in_query_string)
-      errors.push("'custom_attributes' must be an Array of claim names, got #{custom_attributes.inspect}") unless custom_attributes.is_a?(Array)
       errors.push("'token_expiration_tolerance_in_seconds' must be a number of seconds, got #{token_expiration_tolerance_in_seconds.inspect}") unless number?(token_expiration_tolerance_in_seconds, allow_zero: true)
       errors.push("'public_key_cache_ttl' must be a positive number of seconds, got #{public_key_cache_ttl.inspect}") unless number?(public_key_cache_ttl)
       errors.push("'http_open_timeout' must be a positive number of seconds, got #{http_open_timeout.inspect}") unless number?(http_open_timeout)
@@ -37,6 +36,7 @@ module KeycloakApiRails
       errors.push("'expected_token_type' must be a String or nil, got #{expected_token_type.inspect}") unless expected_token_type.nil? || expected_token_type.is_a?(String)
       errors.push("'ca_certificate_file' must be the path of a readable file, got #{ca_certificate_file.inspect}") unless ca_certificate_file.nil? || File.readable?(ca_certificate_file.to_s)
 
+      errors.concat(custom_attributes_errors)
       errors.concat(skip_paths_errors)
       errors.concat(expected_audience_errors)
 
@@ -60,6 +60,19 @@ module KeycloakApiRails
     end
 
     private
+
+    def custom_attributes_errors
+      if custom_attributes.is_a?(Array)
+        invalid_names = custom_attributes.reject { |name| name.is_a?(String) || name.is_a?(Symbol) }
+        if invalid_names.empty?
+          []
+        else
+          ["'custom_attributes' must only contain claim names, as Strings or Symbols, got #{invalid_names.inspect}"]
+        end
+      else
+        ["'custom_attributes' must be an Array of claim names, got #{custom_attributes.inspect}"] 
+      end
+    end
 
     def skip_paths_errors
       return ["'skip_paths' must be a Hash of HTTP methods and path regexps, got #{skip_paths.inspect}"] unless skip_paths.is_a?(Hash)

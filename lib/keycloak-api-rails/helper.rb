@@ -83,7 +83,7 @@ module KeycloakApiRails
     end
 
     def self.assign_current_user_custom_attributes(env, token, attribute_names)
-      names = Array(attribute_names)
+      names = Array(attribute_names).map(&:to_s)
       env[CURRENT_USER_ATTRIBUTES] = token.select { |key, _value| names.include?(key) }
     end
 

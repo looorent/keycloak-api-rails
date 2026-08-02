@@ -200,6 +200,18 @@ RSpec.describe KeycloakApiRails::Configuration do
       expect_rejection(/'custom_attributes' must be an Array/)
     end
 
+    it "accepts 'custom_attributes' declared as Symbols" do
+      configuration.custom_attributes = [:tenant_id, "department"]
+
+      expect(configuration.validate!).to be true
+    end
+
+    it "rejects 'custom_attributes' holding something else than claim names" do
+      configuration.custom_attributes = ["tenant_id", 42, nil]
+
+      expect_rejection(/'custom_attributes' must only contain claim names, as Strings or Symbols, got \[42, nil\]/)
+    end
+
     it "rejects a 'public_key_cache_ttl' that is not a positive number" do
       configuration.public_key_cache_ttl = 0
 
