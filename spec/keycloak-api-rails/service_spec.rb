@@ -351,6 +351,59 @@ RSpec.describe KeycloakApiRails::Service do
     end
   end
 
+  describe "#extract_realm_from_token" do
+    def token_carrying(payload)
+      header = Base64.urlsafe_encode64(JSON.generate("alg" => "RS256", "typ" => "JWT"), padding: false)
+
+      "#{header}.#{Base64.urlsafe_encode64(payload, padding: false)}.a-signature"
+    end
+
+    def realm_of(iss)
+      service.extract_realm_from_token(token_carrying(JSON.generate("iss" => iss)))
+    end
+
+    it "should read the realm of a well-formed issuer" do
+      expect(realm_of("http://localhost:8080/realms/master")).to eq("master")
+    end
+
+    it "should read a realm named with the unreserved characters of an URL" do
+      expect(realm_of("http://localhost:8080/realms/a-tenant_1.2~3")).to eq("a-tenant_1.2~3")
+    end
+
+    context "when the issuer names a realm that would not be interpolated verbatim in an URL" do
+      ["http://localhost:8080/realms/master?",
+       "http://localhost:8080/realms/master#an-anchor",
+       "http://localhost:8080/realms/..",
+       "http://localhost:8080/realms/#{'a' * 129}"].each do |iss|
+        it "should discard the realm of #{iss.inspect}" do
+          expect(realm_of(iss)).to be_nil
+        end
+      end
+    end
+
+    context "when the payload is not what a JWT carries" do
+      ["42", '"a-string"', "[1, 2]", '{"iss": 42}', '{"iss": ["a", "b"]}', "{}", "not-json"].each do |payload|
+        it "should read no realm from #{payload.inspect}" do
+          expect(service.extract_realm_from_token(token_carrying(payload))).to be_nil
+        end
+      end
+    end
+
+    it "should read no realm from a token carrying no payload segment" do
+      expect(service.extract_realm_from_token("a-single-segment")).to be_nil
+    end
+
+    it "should reject a token naming such a realm before any public key is downloaded" do
+      token = token_carrying(JSON.generate("iss" => "http://localhost:8080/realms/..",
+                                           "exp" => (Time.now + 3600).to_i))
+
+      expect(key_resolver).to_not receive(:find_public_keys)
+      expect {
+        service.decode_and_verify(token)
+      }.to raise_error(KeycloakApiRails::TokenError, "JWT token does not have a valid realm")
+    end
+  end
+
   describe "#need_middleware_authentication?" do
 
     let(:method)  { nil }

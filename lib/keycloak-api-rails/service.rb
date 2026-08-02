@@ -5,6 +5,7 @@ module KeycloakApiRails
   class MissingPublicKeysError < StandardError; end
 
   class Service
+    REALM_NAME = /\A(?!\.+\z)[A-Za-z0-9._~-]{1,128}\z/.freeze
 
     def initialize(key_resolver)
       configuration                          = KeycloakApiRails.config
@@ -43,11 +44,21 @@ module KeycloakApiRails
       return nil unless payload_segment
 
       decoded_payload = Base64.urlsafe_decode64(payload_segment)
-      parsed_payload = JSON.parse(decoded_payload)
-      iss = parsed_payload['iss']
-      return nil unless iss
+      parsed_payload  = JSON.parse(decoded_payload)
 
-      iss.split('/').last
+      if parsed_payload.is_a?(Hash)
+        iss = parsed_payload['iss']
+        return nil unless iss.is_a?(String)
+  
+        realm_id = iss.split('/').last
+        if realm_id&.match?(REALM_NAME)
+          realm_id 
+        else
+          nil
+        end
+      else
+        nil
+      end
     rescue JSON::ParserError, ArgumentError
       nil
     end
