@@ -23,7 +23,6 @@ jobs:
         # Each version resolves the newest dependencies it supports: Rails 7.1 on Ruby 2.7
         # and 3.0, Rails 7.2 on Ruby 3.1, Rails 8.1 on Ruby 3.2 and above.
         ruby-version: ['2.7', '3.0', '3.1', '3.2', '3.3', '3.4', '4.0']
-        keycloak-version: ['19.0.3', '22.0.5', '25.0.0', '26.7.0']
 
     steps:
     - uses: actions/checkout@v4
@@ -33,6 +32,26 @@ jobs:
         ruby-version: ${{ matrix.ruby-version }}
         bundler-cache: true # runs 'bundle install' and caches installed gems automatically
     - name: Run tests
+      run: bundle exec rspec
+
+  integration:
+    name: Keycloak ${{ matrix.keycloak-version }}
+    runs-on: ubuntu-24.04
+
+    strategy:
+      fail-fast: false
+      matrix:
+        keycloak-version: ['19.0.3', '22.0.5', '25.0.0', '26.7.0']
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.4'
+        bundler-cache: true
+    - name: Run the integration tests against a real Keycloak
       env:
         KEYCLOAK_VERSION: ${{ matrix.keycloak-version }}
-      run: bundle exec rspec
+        KEYCLOAK_INTEGRATION: '1'
+      run: bundle exec rspec spec/integration

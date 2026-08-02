@@ -10,7 +10,9 @@ require "byebug"
 
 RSpec.configure do |config|
   config.include RailsHelper
-  
+
+  config.filter_run_excluding(:integration) unless ENV["KEYCLOAK_INTEGRATION"]
+
   config.expect_with :rspec do |expectations|
     expectations.include_chain_clauses_in_custom_matcher_descriptions = true
   end

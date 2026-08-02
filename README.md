@@ -315,8 +315,22 @@ Assigning `KeycloakApiRails.public_key_resolver = nil` restores the regular reso
 From the `keycloak-rails-api` directory:
 
 ```
+  $ bundle exec rspec
+```
+
+The examples of `spec/integration` are excluded: they start a Keycloak container, and without Docker
+they wait for a server that never answers. Run them, against the Keycloak version of your choice,
+with:
+
+```
+  $ KEYCLOAK_INTEGRATION=1 KEYCLOAK_VERSION=26.7.0 bundle exec rspec spec/integration
+```
+
+Or run everything in a container, which needs a Docker socket of its own to reach Keycloak:
+
+```
   $ docker build . -t keycloak-rails-api:test
-  $ docker run -v `pwd`:/usr/src/app/ keycloak-rails-api:test bundle exec rspec spec
+  $ docker run -v `pwd`:/usr/src/app/ keycloak-rails-api:test bundle exec rspec
 ```
 
 ## How to release a new version

@@ -2,13 +2,17 @@ require "spec_helper"
 require "rack/mock"
 require_relative "keycloak_helper"
 
-RSpec.describe "Integration with real Keycloak server" do
+RSpec.describe "Integration with real Keycloak server", :integration do
   before(:all) do
     KeycloakHelper.start_keycloak
   end
 
   after(:all) do
     KeycloakHelper.stop_keycloak
+  end
+
+  after(:each) do
+    KeycloakApiRails.load_configuration
   end
 
   before(:each) do
