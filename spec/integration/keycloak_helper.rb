@@ -68,6 +68,10 @@ module KeycloakHelper
     user_payload = {
       username: "testuser",
       enabled: true,
+      email: "testuser@example.com",
+      firstName: "Test",
+      lastName: "User",
+      emailVerified: true,
       credentials: [{ type: "password", value: "testpassword", temporary: false }]
     }
     post_request("#{KEYCLOAK_URL}/admin/realms/#{REALM_NAME}/users", token, user_payload)
