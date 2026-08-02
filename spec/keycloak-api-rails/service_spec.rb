@@ -351,6 +351,56 @@ RSpec.describe KeycloakApiRails::Service do
     end
   end
 
+  describe "the signature algorithm" do
+    let(:claims) { { "iss" => "http://localhost:8080/realms/master", "exp" => (Time.now + 3600).to_i } }
+
+    def service_accepting(algorithms)
+      KeycloakApiRails.config.allowed_algorithms = algorithms
+      KeycloakApiRails::Service.new(key_resolver)
+    end
+
+    def signed_with(algorithm, key)
+      JSON::JWT.new(claims).sign(key, algorithm).to_s
+    end
+
+    def signed_with_alg_header(algorithm)
+      header    = Base64.urlsafe_encode64(JSON.generate("alg" => algorithm, "typ" => "JWT"), padding: false)
+      payload   = Base64.urlsafe_encode64(JSON.generate(claims), padding: false)
+      signature = Base64.urlsafe_encode64("a-signature", padding: false)
+
+      "#{header}.#{payload}.#{signature}"
+    end
+
+    it "should accept the algorithms Keycloak signs its tokens with" do
+      expect(service.decode_and_verify(signed_with(:RS256, private_key))).to_not be_nil
+      expect(service.decode_and_verify(signed_with(:RS512, private_key))).to_not be_nil
+    end
+
+    it "should reject a token claiming to be signed with no algorithm at all" do
+      expect {
+        service.decode_and_verify(signed_with_alg_header("none"))
+      }.to raise_error(KeycloakApiRails::TokenError, "Failed to verify JWT token")
+    end
+
+    it "should reject a token signed with the public key used as an HMAC secret" do
+      expect {
+        service.decode_and_verify(signed_with(:HS256, public_key.to_pem))
+      }.to raise_error(KeycloakApiRails::TokenError, "Failed to verify JWT token")
+    end
+
+    context "when the accepted algorithms are narrowed down to the one of the realm" do
+      it "should accept a token signed with it" do
+        expect(service_accepting([:RS256]).decode_and_verify(signed_with(:RS256, private_key))).to_not be_nil
+      end
+
+      it "should reject a token signed with another one, however valid its signature" do
+        expect {
+          service_accepting([:RS256]).decode_and_verify(signed_with(:RS512, private_key))
+        }.to raise_error(KeycloakApiRails::TokenError, "Failed to verify JWT token")
+      end
+    end
+  end
+
   describe "#extract_realm_from_token" do
     def token_carrying(payload)
       header = Base64.urlsafe_encode64(JSON.generate("alg" => "RS256", "typ" => "JWT"), padding: false)

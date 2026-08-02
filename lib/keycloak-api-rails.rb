@@ -87,6 +87,7 @@ module KeycloakApiRails
       config.allow_token_in_query_string            = false
       config.http_open_timeout                      = 5
       config.http_read_timeout                      = 5
+      config.allowed_algorithms                     = KeycloakApiRails::Service::SUPPORTED_ALGORITHMS
     end
   end
 

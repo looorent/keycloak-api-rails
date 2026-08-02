@@ -1,12 +1,10 @@
-RSpec.describe KeycloakApiRails::Service do
+RSpec.describe KeycloakApiRails::PublicKeyCachedResolver do
 
   let(:public_key_cache_ttl)  { 86400 }
   let(:server_url)            { "whatever:8080" }
   let(:realm_id)              { "pouet" }
-  let!(:resolver)             { KeycloakApiRails::PublicKeyCachedResolver.new(server_url, realm_id, public_key_cache_ttl) }
 
   before(:each) do
-    resolver.send(:cache_for, "pouet").instance_variable_set(:@resolver, KeycloakApiRails::PublicKeyResolverStub.new)
     now = Time.local(2018, 1, 9, 12, 0, 0)
     Timecop.freeze(now)
   end
@@ -16,6 +14,12 @@ RSpec.describe KeycloakApiRails::Service do
   end
 
   describe "#find_public_key" do
+    let!(:resolver) { KeycloakApiRails::PublicKeyCachedResolver.new(server_url, realm_id, public_key_cache_ttl) }
+
+    before(:each) do
+      resolver.send(:cache_for, "pouet").instance_variable_set(:@resolver, KeycloakApiRails::PublicKeyResolverStub.new)
+    end
+
     context "when there is no public key in cache yet" do
       before(:each) do
         @public_key = resolver.find_public_keys
@@ -201,6 +205,102 @@ RSpec.describe KeycloakApiRails::Service do
 
         expect(resolve_concurrently(10)).to all eq "the-public-keys"
         expect(keycloak.calls).to eq 2
+      end
+    end
+  end
+
+  describe "the realms it caches" do
+    let(:keycloak) { KeycloakApiRails::HTTPClientStub.new }
+    let(:logger)   { instance_double(Logger, warn: nil) }
+
+    def resolver_for(configured_realm_id)
+      KeycloakApiRails::PublicKeyCachedResolver.new(keycloak, configured_realm_id, public_key_cache_ttl, logger)
+    end
+
+    context "when a single realm is configured" do
+      let(:resolver) { resolver_for("a-realm") }
+
+      it "downloads the public keys of that realm" do
+        expect(resolver.find_public_keys("a-realm")).to_not be_nil
+        expect(keycloak.realms).to eq ["a-realm"]
+      end
+
+      it "answers no public key for any other realm, and does not call Keycloak" do
+        expect {
+          resolver.find_public_keys("another-realm")
+        }.to raise_error KeycloakApiRails::MissingPublicKeysError
+
+        expect(keycloak.realms).to be_empty
+      end
+    end
+
+    context "when several realms are configured" do
+      let(:resolver) { resolver_for(["a-realm", "another-realm"]) }
+
+      it "downloads the public keys of each of them, once each" do
+        2.times { resolver.find_public_keys("a-realm") }
+        2.times { resolver.find_public_keys("another-realm") }
+
+        expect(keycloak.realms).to eq ["a-realm", "another-realm"]
+      end
+
+      it "answers no public key for a realm that is not one of them" do
+        expect {
+          resolver.find_public_keys("a-third-realm")
+        }.to raise_error KeycloakApiRails::MissingPublicKeysError
+
+        expect(keycloak.realms).to be_empty
+      end
+
+      # 'File.join' flattens an Array, so asking for no realm in particular used to download the
+      # keys from '<server_url>/realms/a-realm/another-realm/protocol/openid-connect/certs'.
+      it "answers no public key when no realm is named" do
+        expect {
+          resolver.find_public_keys
+        }.to raise_error KeycloakApiRails::MissingPublicKeysError
+
+        expect(keycloak.realms).to be_empty
+      end
+    end
+
+    context "when the realms are decided by a Proc" do
+      let(:resolver) { resolver_for(->(_realm_id) { true }) }
+      let(:cap)      { KeycloakApiRails::PublicKeyCachedResolver::MAX_CACHED_REALMS }
+
+      def resolve(realm_id)
+        resolver.find_public_keys(realm_id)
+      rescue KeycloakApiRails::MissingPublicKeysError
+        nil
+      end
+
+      it "caches as many realms as the cap allows" do
+        cap.times { |index| resolve("realm-#{index}") }
+
+        expect(keycloak.realms.size).to eq cap
+      end
+
+      it "answers no public key beyond the cap, rather than caching one more realm" do
+        cap.times { |index| resolve("realm-#{index}") }
+
+        expect {
+          resolver.find_public_keys("one-realm-too-many")
+        }.to raise_error KeycloakApiRails::MissingPublicKeysError
+
+        expect(keycloak.realms.size).to eq cap
+      end
+
+      it "keeps serving the realms it had already cached" do
+        cap.times { |index| resolve("realm-#{index}") }
+        resolve("one-realm-too-many")
+
+        expect(resolver.find_public_keys("realm-0")).to_not be_nil
+      end
+
+      # Whoever names the realms must not get to choose how much the application writes to its logs.
+      it "logs the first refusal only" do
+        expect(logger).to receive(:warn).once
+
+        10.times { |index| resolve(nil) }
       end
     end
   end

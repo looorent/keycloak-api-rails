@@ -248,6 +248,30 @@ RSpec.describe KeycloakApiRails::Configuration do
       expect_rejection(/'ca_certificate_file' must be the path of a readable file/)
     end
 
+    it "accepts 'allowed_algorithms' narrowed down to the one of the realm" do
+      configuration.allowed_algorithms = [:RS256]
+
+      expect(configuration.validate!).to be true
+    end
+
+    it "accepts 'allowed_algorithms' declared as Strings" do
+      configuration.allowed_algorithms = ["RS256", "ES256"]
+
+      expect(configuration.validate!).to be true
+    end
+
+    it "rejects 'allowed_algorithms' that accepts nothing" do
+      configuration.allowed_algorithms = []
+
+      expect_rejection(/'allowed_algorithms' must be a non-empty Array/)
+    end
+
+    it "rejects 'allowed_algorithms' declaring an algorithm this library does not verify" do
+      configuration.allowed_algorithms = [:RS256, :HS256]
+
+      expect_rejection(/'allowed_algorithms' declares \[:HS256\], which this library does not verify/)
+    end
+
     it "reports every problem at once" do
       configuration.opt_in            = "true"
       configuration.custom_attributes = "tenant_id"

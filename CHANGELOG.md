@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * The realm named by the `iss` claim is read before the signature of the token is verified, and is interpolated in the URL its public keys are downloaded from. It is now refused unless it is a plain name: the unreserved characters of RFC 3986, at most 128 of them, and not a relative path segment. `https://keycloak/realms/master?` and `https://keycloak/realms/..` both are the last segment of a well-formed `iss`, and both used to build another URL than the one of the realm they name. Such a token is answered a `401`, reason `:invalid_realm`, and no request is sent to Keycloak.
 * A token whose payload is not a JSON object, or whose `iss` claim is not a String, is answered a `401`. Reading such a payload used to raise a `NoMethodError` or a `TypeError` out of the middleware, and to be answered a `500`.
+* The number of realms whose public keys are cached is now bounded. 
+* A token was verified with whichever algorithm its `alg` header named. New `allowed_algorithms` option, defaulting to the asymmetric algorithms Keycloak signs with, and narrowable to the one of the realm. Symmetric algorithms are refused.
 
 ### Performance
 

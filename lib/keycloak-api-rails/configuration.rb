@@ -21,6 +21,7 @@ module KeycloakApiRails
     attr_accessor :allow_token_in_query_string
     attr_accessor :http_open_timeout
     attr_accessor :http_read_timeout
+    attr_accessor :allowed_algorithms
 
     def validate!
       errors = []
@@ -41,6 +42,7 @@ module KeycloakApiRails
       errors.concat(custom_attributes_errors)
       errors.concat(skip_paths_errors)
       errors.concat(expected_audience_errors)
+      errors.concat(allowed_algorithms_errors)
 
       raise InvalidConfigurationError, "Invalid Keycloak configuration: #{errors.join('; ')}" unless errors.empty?
 
@@ -94,6 +96,19 @@ module KeycloakApiRails
         expected_audience.all? { |audience| audience.is_a?(String) } ? [] : ["'expected_audience' must only contain Strings, got #{expected_audience.inspect}"]
       else
         ["'expected_audience' must be a String, an Array of Strings, or nil, got #{expected_audience.inspect}"]
+      end
+    end
+
+    def allowed_algorithms_errors
+      unless allowed_algorithms.is_a?(Array) && !allowed_algorithms.empty?
+        return ["'allowed_algorithms' must be a non-empty Array of algorithm names, got #{allowed_algorithms.inspect}"]
+      end
+
+      unsupported = allowed_algorithms.reject { |algorithm| Service::SUPPORTED_ALGORITHMS.include?(algorithm.to_s.to_sym) }
+      if unsupported.empty?
+        []
+      else
+        ["'allowed_algorithms' declares #{unsupported.inspect}, which this library does not verify. It accepts #{Service::SUPPORTED_ALGORITHMS.inspect}"]
       end
     end
 

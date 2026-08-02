@@ -6,6 +6,7 @@ module KeycloakApiRails
 
   class Service
     REALM_NAME = /\A(?!\.+\z)[A-Za-z0-9._~-]{1,128}\z/.freeze
+    SUPPORTED_ALGORITHMS = %i[RS256 RS384 RS512 PS256 PS384 PS512 ES256 ES384 ES512].freeze
 
     def initialize(key_resolver)
       configuration                          = KeycloakApiRails.config
@@ -17,6 +18,7 @@ module KeycloakApiRails
       @expected_token_type                   = configuration.expected_token_type
       @verify_not_before                     = configuration.verify_not_before
       @allow_token_in_query_string           = configuration.allow_token_in_query_string
+      @allowed_algorithms                    = Array(configuration.allowed_algorithms).map(&:to_sym)
     end
 
     def decode_and_verify(token)
@@ -95,8 +97,8 @@ module KeycloakApiRails
     private
 
     def decode(token, public_keys)
-      decoded_token = JSON::JWT.decode(token, public_keys)
-      decoded_token.verify!(public_keys)
+      decoded_token = JSON::JWT.decode(token, public_keys, @allowed_algorithms)
+      decoded_token.verify!(public_keys, @allowed_algorithms)
       decoded_token
     rescue JSON::JWT::VerificationFailed, JSON::JWK::Set::KidNotFound => e
       raise TokenError.verification_failed(token, e)
