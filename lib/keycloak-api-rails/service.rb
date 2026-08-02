@@ -58,12 +58,19 @@ module KeycloakApiRails
       raise TokenError.unknown(token, e)
     end
 
+    # RFC 7519 requires 'exp' and 'nbf' to be NumericDates.
     def verify_claims!(token, decoded_token)
       raise TokenError.missing_claim(token, "exp") unless decoded_token.key?("exp")
+      raise TokenError.invalid_claim(token, "exp") unless decoded_token["exp"].is_a?(Numeric)
+      raise TokenError.invalid_claim(token, "nbf") if not_before_is_invalid?(decoded_token)
       raise TokenError.expired(token)              if expired?(decoded_token)
       raise TokenError.not_yet_valid(token)        if not_yet_valid?(decoded_token)
       raise TokenError.invalid_audience(token)     unless audience_valid?(decoded_token)
       raise TokenError.invalid_token_type(token)   unless token_type_valid?(decoded_token)
+    end
+
+    def not_before_is_invalid?(token)
+      @verify_not_before && token.key?("nbf") && !token["nbf"].is_a?(Numeric)
     end
 
     # Anything that is not a regexp is discarded rather than matched: 'String#match' compiles its

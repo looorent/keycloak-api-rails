@@ -138,6 +138,15 @@ RSpec.describe KeycloakApiRails::Service do
       KeycloakApiRails::Service.new(key_resolver)
     end
 
+    def sign_raw_claims(claims)
+      header        = Base64.urlsafe_encode64(JSON.generate("alg" => "RS256", "typ" => "JWT"), padding: false)
+      payload       = Base64.urlsafe_encode64(JSON.generate(claims), padding: false)
+      signing_input = "#{header}.#{payload}"
+      signature     = private_key.sign(OpenSSL::Digest::SHA256.new, signing_input)
+
+      "#{signing_input}.#{Base64.urlsafe_encode64(signature, padding: false)}"
+    end
+
     describe "the 'exp' claim" do
       context "when the token carries none" do
         let(:token) { JSON::JWT.new("sub" => "a-user").sign(private_key, :RS256).to_s }
@@ -146,6 +155,35 @@ RSpec.describe KeycloakApiRails::Service do
           expect {
             service.decode_and_verify(token)
           }.to raise_error(KeycloakApiRails::TokenError, "JWT token does not carry the mandatory claim 'exp'")
+        end
+      end
+
+      context "when the token carries one that is not a number of seconds" do
+        [nil, true, "1515495600", [1515495600], { "at" => 1515495600 }].each do |value|
+          context "such as #{value.inspect}" do
+            let(:token) { sign_raw_claims("sub" => "a-user", "exp" => value) }
+
+            it "should raise an error :invalid_claim" do
+              expect {
+                service.decode_and_verify(token)
+              }.to raise_error(KeycloakApiRails::TokenError,
+                               "JWT token carries an invalid 'exp' claim: it must be a number of seconds since the Epoch")
+            end
+
+            it "should report the reason :invalid_claim" do
+              service.decode_and_verify(token)
+            rescue KeycloakApiRails::TokenError => e
+              expect(e.reason).to eq :invalid_claim
+            end
+          end
+        end
+      end
+
+      context "when the token carries one as a float" do
+        let(:token) { sign_raw_claims("sub" => "a-user", "exp" => (Time.now + 3600).to_f) }
+
+        it "should return a not-nil decoded token" do
+          expect(service.decode_and_verify(token)).to_not be_nil
         end
       end
     end
@@ -281,6 +319,29 @@ RSpec.describe KeycloakApiRails::Service do
           it "should return a not-nil decoded token" do
             expect(decoding_service.decode_and_verify(token)).to_not be_nil
           end
+        end
+
+        context "and the token carries an 'nbf' claim that is not a number of seconds" do
+          [nil, true, "1515495600", { "at" => 1515495600 }].each do |value|
+            context "such as #{value.inspect}" do
+              let(:token) { sign_raw_claims("exp" => (Time.now + 3600).to_i, "nbf" => value) }
+
+              it "should raise an error :invalid_claim" do
+                expect {
+                  decoding_service.decode_and_verify(token)
+                }.to raise_error(KeycloakApiRails::TokenError,
+                                 "JWT token carries an invalid 'nbf' claim: it must be a number of seconds since the Epoch")
+              end
+            end
+          end
+        end
+      end
+
+      context "when 'verify_not_before' is disabled" do
+        let(:token) { sign_raw_claims("exp" => (Time.now + 3600).to_i, "nbf" => nil) }
+
+        it "should ignore an 'nbf' claim that is not a number of seconds" do
+          expect(service_configured_with(verify_not_before: false).decode_and_verify(token)).to_not be_nil
         end
       end
     end

@@ -41,6 +41,10 @@ module KeycloakApiRails
       new(token, :missing_claim, "JWT token does not carry the mandatory claim '#{claim}'")
     end
 
+    def self.invalid_claim(token, claim)
+      new(token, :invalid_claim, "JWT token carries an invalid '#{claim}' claim: it must be a number of seconds since the Epoch")
+    end
+
     def self.unknown(token, original_error)
       new(token, :unknown, "Failed to read JWT token", original_error)
     end

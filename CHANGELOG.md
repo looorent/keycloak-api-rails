@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * `skip_paths` declaring its paths as Strings, e.g. `{ get: ["/health/db"] }`, opened routes that had to be authenticated.
 * A path that is not a `Regexp` is discarded by the middleware rather than matched, and a warning is logged naming it.
+* With `verify_not_before` enabled, an `nbf` claim carried as null was read as an absent one, skipping the very check the option asks for. It is now rejected.
+* A token whose `exp` or `nbf` claim is not a number of seconds is answered a `401`, where `Time.at` used to raise a `TypeError` and answer a `500`. The 2.0.0 guard only checked that `exp` was present, not that it held a NumericDate. New `KeycloakApiRails::TokenError` reason: `:invalid_claim`.
 
 ## [2.0.0] - 2026-08-01
 

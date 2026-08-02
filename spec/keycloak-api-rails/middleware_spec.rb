@@ -158,6 +158,19 @@ RSpec.describe KeycloakApiRails::Middleware do
       expect(error).to eq "JWT token does not carry the mandatory claim 'exp'"
     end
 
+    it "answers a 401 when the token carries an 'exp' claim that is not a number of seconds" do
+      header        = Base64.urlsafe_encode64(JSON.generate("alg" => "RS256", "kid" => KeycloakApiRails::Testing::KEY_ID), padding: false)
+      payload       = Base64.urlsafe_encode64(JSON.generate("sub" => "x", "exp" => nil), padding: false)
+      signing_input = "#{header}.#{payload}"
+      signature     = KeycloakApiRails::Testing.private_key.sign(OpenSSL::Digest::SHA256.new, signing_input)
+      token         = "#{signing_input}.#{Base64.urlsafe_encode64(signature, padding: false)}"
+
+      call("/things", headers: { "HTTP_AUTHORIZATION" => "Bearer #{token}" })
+
+      expect(status).to eq 401
+      expect(error).to eq "JWT token carries an invalid 'exp' claim: it must be a number of seconds since the Epoch"
+    end
+
     it "does not call the downstream application" do
       call("/things")
 
