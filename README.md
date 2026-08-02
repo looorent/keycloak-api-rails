@@ -36,7 +36,7 @@ _If both methods are used at the same time, the `Authorization` header takes pre
 
 By default, Keycloak-api-rails installs as a Rack Middleware. It processes all requests before any application logic. URIs/Paths can be excluded (opted-out) from this validation using the 'skip_paths' config option
 
-Alternatively, it can be configured to `opt-in` to validation. In this case, no Rack middleware is used, and controllers can request (opt-in) by including the module `KeycloakApiRails::Authentication` and calling `keycloak_authenticate`, for example in a `before_action`, like so: 
+Alternatively, it can be configured to `opt-in` to validation. The middleware is still installed and controllers request (opt-in) by including the module `KeycloakApiRails::Authentication` and calling `keycloak_authenticate`, for example in a `before_action`, like so: 
 
 ```ruby
 class MyApiController < ActionController::Base
@@ -60,8 +60,8 @@ All options have a default value. However, all of them can be changed in your in
 
 | Option | Default Value | Type | Required? | Description  | Example |
 | ---- | ----- | ------ | ----- | ------ | ----- |
-| `server_url` | `nil`| String | Required | The base url where your Keycloak server is located. This value can be retrieved in your Keycloak client configuration. | `auth:8080` |
-| `realm_id` | `nil`| String, Array or Proc | Required | Realm's name(s) (not id, actually). Can be a single String, an Array of Strings for multiple tenants, or a Proc for dynamic validation. | `"master"` or `["tenant1", "tenant2"]` |
+| `server_url` | `nil`| String | Required | The base url where your Keycloak server is located, scheme included. Without one, the url cannot be parsed and no public key is ever downloaded | `https://keycloak.example.org` or `http://auth:8080` |
+| `realm_id` | `nil`| String, Array or Proc | Required | Realm's name(s) (not id, actually). A single String, an Array of Strings for multiple tenants, or a Proc receiving the realm named by the token and answering whether it is allowed | `"master"`, `["tenant1", "tenant2"]` or `->(realm) { Tenant.exists?(name: realm) }` |
 | `logger` | `Logger.new(STDOUT)`| Logger | Optional | The logger used by `keycloak-api-rails` | `Rails.logger` | 
 | `skip_paths` | `{}`| Hash of methods and paths regexp | Optional | Paths whose token must not be validated, matched against the URL-decoded path of the request. Each path must be a `Regexp`, anchored with `\A` and `\z`: a String is refused when the application boots, and `^` and `$` are warned about, for the reasons given below | `{ get: [/\A\/health\/.+/] }`| 
 | `opt_in` | `false` | Boolean | Optional | When false, every request is validated by the middleware, except the ones matching `skip_paths`. When true, no middleware validates anything and authentication must be requested explicitly, by calling `keycloak_authenticate` from a controller | `true`
@@ -137,10 +137,15 @@ Keycloak only adds an API to the `aud` claim of a token once that API is declare
 `config.verify_not_before = true` additionally rejects a token whose `nbf` claim is in the future.
 It is disabled by default because a clock skew between Keycloak and the API rejects valid tokens.
 
+The `iss` claim is checked against `server_url` only when one is configured. A test environment replacing the public key resolver, as `keycloak-api-rails/testing` does, accepts any issuer.
+
 ## Multi-tenancy (Multiple Realms)
 
 The library natively supports multi-tenancy by validating tokens issued by multiple Keycloak realms. 
 Instead of a static string, you can configure `realm_id` with an Array or a Proc. The library will dynamically extract the realm from the token's `iss` claim, check if it is permitted, and fetch the appropriate public keys for that specific realm.
+
+Those realms all live under the same `server_url`: a token whose `iss` names another server is rejected, however allowed the realm it names.
+Declaring `expected_audience` matters all the more here — without it, a token issued for any client of any allowed realm opens the API.
 
 Using an Array of allowed realms:
 ```ruby

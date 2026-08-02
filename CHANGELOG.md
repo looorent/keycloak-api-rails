@@ -32,7 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Integration tests ensuring E2E compatibility with a real Keycloak server using Docker.
 * Automated tests in CI against multiple Keycloak versions (19.0.3, 22.0.5, 25.0.0, 26.7.0).
 * Enforced that the Rake `release` task cannot be executed locally without passing the test suite first.
-* Multi-tenancy support: `realm_id` can now be a String, an Array of Strings, or a Proc (e.g., `->(env) { ... }`) that evaluates to a String or Array of Strings, allowing dynamic realm resolution per request.
+* Multi-tenancy support: `realm_id` can now be a String, an Array of Strings, or a Proc (e.g. `->(realm) { Tenant.exists?(name: realm) }`) receiving the realm named by the token and answering whether it is allowed.
 * The middleware now validates the token against the allowed realms. A token carrying an `iss` claim that does not match one of the expected realms will be rejected. New `KeycloakApiRails::TokenError` reason: `:invalid_realm`.
 * `PublicKeyCachedResolver` caches public keys per-realm, ensuring safe operation in a multi-tenant environment.
 
