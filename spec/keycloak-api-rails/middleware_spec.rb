@@ -123,6 +123,17 @@ RSpec.describe KeycloakApiRails::Middleware do
       expect(KeycloakApiRails::Helper.current_user_id(@downstream_env)).to eq "a-keycloak-id"
     end
 
+    it "honours a configuration change applied once a request has been served" do
+      call("/things", headers: authorization_headers(**token_options))
+      expect(status).to eq 200
+
+      KeycloakApiRails.configure { |config| config.expected_audience = "my-api" }
+
+      call("/things", headers: authorization_headers(**token_options))
+      expect(status).to eq 401
+      expect(error).to eq "JWT token has been issued for another audience"
+    end
+
     it "does not let a TokenError raised by the application become a 401" do
       allow(downstream).to receive(:call).and_raise(KeycloakApiRails::TokenError.expired("another token"))
 

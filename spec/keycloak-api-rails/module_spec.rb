@@ -63,6 +63,67 @@ RSpec.describe KeycloakApiRails do
     end
   end
 
+  describe "#configure" do
+    before(:each) do
+      KeycloakApiRails.load_configuration
+      KeycloakApiRails.config.logger     = ::Logger.new(File::NULL)
+      KeycloakApiRails.config.server_url = "https://keycloak.example.org"
+      KeycloakApiRails.config.realm_id   = "a-realm"
+    end
+
+    after(:each) do
+      KeycloakApiRails.public_key_resolver = nil
+      KeycloakApiRails.load_configuration
+    end
+
+    it "discards the service it had memoized" do
+      KeycloakApiRails::Testing.stub_public_keys!
+      service = KeycloakApiRails.service
+
+      KeycloakApiRails.configure { |config| config.expected_audience = "my-api" }
+
+      expect(KeycloakApiRails.service).to_not be service
+    end
+
+    it "discards the HTTP client it had memoized" do
+      client = KeycloakApiRails.http_client
+
+      KeycloakApiRails.configure { |config| config.http_read_timeout = 2 }
+
+      expect(KeycloakApiRails.http_client).to_not be client
+    end
+
+    it "discards the public key resolver it had memoized" do
+      resolver = KeycloakApiRails.public_key_resolver
+
+      KeycloakApiRails.configure { |config| config.realm_id = "another-realm" }
+
+      expect(KeycloakApiRails.public_key_resolver).to_not be resolver
+    end
+
+    # Discarding it would uninstall the resolver of "keycloak-api-rails/testing" on the first
+    # example that configures anything.
+    it "keeps the public key resolver that has been assigned explicitly" do
+      KeycloakApiRails::Testing.stub_public_keys!
+      resolver = KeycloakApiRails.public_key_resolver
+
+      KeycloakApiRails.configure { |config| config.expected_audience = "my-api" }
+
+      expect(KeycloakApiRails.public_key_resolver).to be resolver
+    end
+
+    it "memoizes the regular resolver again once the override is withdrawn" do
+      KeycloakApiRails::Testing.stub_public_keys!
+      KeycloakApiRails.public_key_resolver = nil
+
+      resolver = KeycloakApiRails.public_key_resolver
+      KeycloakApiRails.configure { |config| config.realm_id = "another-realm" }
+
+      expect(resolver).to be_a KeycloakApiRails::PublicKeyCachedResolver
+      expect(KeycloakApiRails.public_key_resolver).to_not be resolver
+    end
+  end
+
   describe "KeycloakApiRails::Testing" do
     before(:each) do
       %i[@private_key @signing_key @public_keys].each do |name|

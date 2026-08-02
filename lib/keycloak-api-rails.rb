@@ -24,8 +24,18 @@ module KeycloakApiRails
   MONITOR = Monitor.new
 
   def self.configure
-    MONITOR.synchronize { yield @configuration ||= KeycloakApiRails::Configuration.new }
+    MONITOR.synchronize do
+      yield @configuration ||= KeycloakApiRails::Configuration.new
+      discard_configured_objects
+    end
   end
+
+  def self.discard_configured_objects
+    @http_client         = nil
+    @public_key_resolver = nil unless @public_key_resolver_assigned
+    @service             = nil
+  end
+  private_class_method :discard_configured_objects
 
   def self.config
     @configuration
@@ -44,8 +54,9 @@ module KeycloakApiRails
   # a reference to the resolver that is being replaced.
   def self.public_key_resolver=(resolver)
     MONITOR.synchronize do
-      @public_key_resolver = resolver
-      @service             = nil
+      @public_key_resolver          = resolver
+      @public_key_resolver_assigned = !resolver.nil?
+      @service                      = nil
     end
   end
 
