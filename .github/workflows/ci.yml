@@ -34,6 +34,20 @@ jobs:
     - name: Run tests
       run: bundle exec rspec
 
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-24.04
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.4'
+        bundler-cache: true
+    - name: Check the dependencies against the Ruby advisory database
+      run: bundle exec bundler-audit check --update
+
   integration:
     name: Keycloak ${{ matrix.keycloak-version }}
     runs-on: ubuntu-24.04

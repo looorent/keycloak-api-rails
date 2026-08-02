@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+* CI checks the dependencies against the Ruby advisory database on every push, with `bundler-audit`, and Dependabot keeps the actions of the workflows up to date.
 * Integration tests ensuring E2E compatibility with a real Keycloak server using Docker.
 * Automated tests in CI against multiple Keycloak versions (19.0.3, 22.0.5, 25.0.0, 26.7.0).
 * Enforced that the Rake `release` task cannot be executed locally without passing the test suite first.
