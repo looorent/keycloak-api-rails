@@ -6,7 +6,7 @@ module KeycloakApiRails
     def initialize(key_resolver)
       configuration                          = KeycloakApiRails.config
       @key_resolver                          = key_resolver
-      @skip_paths                            = normalize_skip_paths(configuration.skip_paths)
+      @skip_paths                            = normalize_skip_paths(configuration.skip_paths, configuration.logger)
       @opt_in                                = configuration.opt_in
       @token_expiration_tolerance_in_seconds = configuration.token_expiration_tolerance_in_seconds
       @expected_audiences                    = Array(configuration.expected_audience).map(&:to_s)
@@ -66,9 +66,20 @@ module KeycloakApiRails
       raise TokenError.invalid_token_type(token)   unless token_type_valid?(decoded_token)
     end
 
-    def normalize_skip_paths(skip_paths)
+    # Anything that is not a regexp is discarded rather than matched: 'String#match' compiles its
+    # argument into a regexp, so a String would be matched against the path of the request instead of
+    # the other way around, and would open every path that is a sub-pattern of it. The railtie rejects
+    # such a configuration when the application boots; a Rack application running without Rails never
+    # calls 'validate!', so the paths keep being authenticated here.
+    def normalize_skip_paths(skip_paths, logger)
       (skip_paths || {}).each_with_object({}) do |(method, paths), normalized|
-        normalized[method.to_s.downcase.to_sym] = Array(paths)
+        regexps, discarded = Array(paths).partition { |path| path.is_a?(Regexp) }
+
+        unless discarded.empty?
+          logger&.warn("KeycloakApiRails: 'skip_paths[#{method.inspect}]' declares #{discarded.map(&:inspect).join(', ')}, which are not regexps. They are ignored, and the paths they were meant to open keep being authenticated.")
+        end
+
+        normalized[method.to_s.downcase.to_sym] = regexps
       end
     end
 

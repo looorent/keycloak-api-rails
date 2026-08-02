@@ -211,6 +211,38 @@ RSpec.describe KeycloakApiRails::Middleware do
     end
   end
 
+  # 'validate!' rejects such a configuration when a Rails application boots. A Rack application
+  # running without Rails never calls it, so the paths have to keep being authenticated here.
+  describe "when 'skip_paths' declares its paths as Strings" do
+    before(:each) do
+      KeycloakApiRails.config.skip_paths = { get: ["/health/db"] }
+    end
+
+    it "keeps authenticating the paths that were never declared" do
+      ["/", "/h", "/health", "/db", "/things"].each do |path|
+        call(path)
+
+        expect(status).to eq 401
+      end
+    end
+
+    it "keeps authenticating the declared path itself" do
+      call("/health/db")
+
+      expect(status).to eq 401
+    end
+
+    it "warns that the declared paths are ignored" do
+      logger = ::Logger.new(warnings = StringIO.new)
+      KeycloakApiRails.config.logger = logger
+
+      call("/health/db")
+
+      expect(warnings.string).to include "skip_paths[:get]"
+      expect(warnings.string).to include "keep being authenticated"
+    end
+  end
+
   describe "when the request is authenticated" do
     it "satisfies Rack::Lint" do
       skip "Rack::Lint checks the case of the header names from Rack 3 on" unless rack_3?

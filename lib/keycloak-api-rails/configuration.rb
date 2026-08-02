@@ -65,9 +65,9 @@ module KeycloakApiRails
       return ["'skip_paths' must be a Hash of HTTP methods and path regexps, got #{skip_paths.inspect}"] unless skip_paths.is_a?(Hash)
 
       skip_paths.filter_map do |method, paths|
-        next if paths.is_a?(Array) && paths.all? { |path| path.respond_to?(:match) }
+        next if paths.is_a?(Array) && paths.all? { |path| path.is_a?(Regexp) }
 
-        "'skip_paths[#{method.inspect}]' must be an Array of regexps, got #{paths.inspect}"
+        "'skip_paths[#{method.inspect}]' must be an Array of regexps, got #{paths.inspect}. A String is refused because 'String#match' compiles its argument into a regexp: the path of the request would become the pattern, and routes that must be authenticated would be skipped"
       end
     end
 

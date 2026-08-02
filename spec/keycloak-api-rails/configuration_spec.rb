@@ -182,6 +182,18 @@ RSpec.describe KeycloakApiRails::Configuration do
       expect_rejection(/'skip_paths\[:get\]' must be an Array of regexps/)
     end
 
+    it "rejects 'skip_paths' declaring its paths as Strings" do
+      configuration.skip_paths = { get: ["/health"] }
+
+      expect_rejection(/'skip_paths\[:get\]' must be an Array of regexps/)
+    end
+
+    it "explains why a String path is refused" do
+      configuration.skip_paths = { get: ["/health"] }
+
+      expect_rejection(/String#match' compiles its argument into a regexp/)
+    end
+
     it "rejects 'custom_attributes' that is not an Array" do
       configuration.custom_attributes = "tenant_id"
 
