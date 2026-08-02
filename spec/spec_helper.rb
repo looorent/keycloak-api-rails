@@ -4,6 +4,7 @@ require_relative "support/public_key_cached_resolver_stub"
 require_relative "support/public_key_resolver_stub"
 require_relative "support/controllable_public_key_resolver_stub"
 require_relative "support/http_client_stub"
+require_relative "support/realm_keys"
 require "timecop"
 require "byebug"
 
