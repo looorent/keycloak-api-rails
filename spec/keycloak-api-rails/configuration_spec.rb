@@ -4,6 +4,7 @@ RSpec.describe KeycloakApiRails::Configuration do
   let(:attribute_names) do
     %i[
       server_url
+      issuer_url
       realm_id
       skip_paths
       opt_in
@@ -91,6 +92,7 @@ RSpec.describe KeycloakApiRails::Configuration do
       config = KeycloakApiRails.config
 
       expect(config.server_url).to be_nil
+      expect(config.issuer_url).to be_nil
       expect(config.realm_id).to be_nil
       expect(config.logger).to be_a ::Logger
       expect(config.skip_paths).to eq({})
@@ -134,6 +136,7 @@ RSpec.describe KeycloakApiRails::Configuration do
 
     it "accepts a fully assigned configuration" do
       configuration.server_url          = "https://keycloak.example.org"
+      configuration.issuer_url          = "https://keycloak-public.example.org"
       configuration.realm_id            = "a-realm"
       configuration.skip_paths          = { get: [%r{^/health}], post: [%r{^/message}] }
       configuration.opt_in              = true
@@ -150,6 +153,12 @@ RSpec.describe KeycloakApiRails::Configuration do
       configuration.server_url = URI("https://keycloak.example.org")
 
       expect_rejection(/'server_url' must be a String or nil/)
+    end
+
+    it "rejects an 'issuer_url' that is not a String" do
+      configuration.issuer_url = URI("https://keycloak.example.org")
+
+      expect_rejection(/'issuer_url' must be a String or nil/)
     end
 
     it "rejects a logger that cannot log" do

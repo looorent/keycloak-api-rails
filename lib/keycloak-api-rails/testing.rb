@@ -90,7 +90,8 @@ module KeycloakApiRails
         unless claims.key?(:iss) || claims.key?("iss")
           config_realm_id = KeycloakApiRails.config.realm_id
           realm_id = config_realm_id.is_a?(String) ? config_realm_id : "master"
-          payload["iss"] = File.join(KeycloakApiRails.config.server_url.to_s, "realms", realm_id)
+          issuer_url = KeycloakApiRails.config.issuer_url || KeycloakApiRails.config.server_url
+          payload["iss"] = File.join(issuer_url.to_s, "realms", realm_id)
         end
 
         claims.each { |name, value| payload[name.to_s] = value }

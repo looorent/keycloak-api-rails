@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+* New `issuer_url` option: the `iss` claim is checked against it instead of `server_url` when set, for setups where the API reaches Keycloak through a different address than the one Keycloak advertises to its clients (e.g. an internal Docker hostname vs. a public one).
+
 ## [2.0.3] - 2026-08-03
 
 ### Security

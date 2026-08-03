@@ -192,6 +192,42 @@ RSpec.describe KeycloakApiRails::Service do
       end
     end
 
+    describe "the 'iss' claim" do
+      after(:each) { KeycloakApiRails.config.issuer_url = nil }
+
+      context "when the token's issuer does not match 'server_url'" do
+        let(:token) { sign_raw_claims("iss" => "http://another-host:8080/realms/master", "exp" => (Time.now + 3600).to_i) }
+
+        it "should raise an error :invalid_realm" do
+          expect {
+            service.decode_and_verify(token)
+          }.to raise_error(KeycloakApiRails::TokenError, "JWT token does not have a valid realm")
+        end
+      end
+
+      context "when 'issuer_url' is configured and the token's issuer matches it" do
+        let(:token) { sign_raw_claims("iss" => "https://keycloak.example.org/realms/master", "exp" => (Time.now + 3600).to_i) }
+
+        it "should accept the token even though it does not match 'server_url'" do
+          KeycloakApiRails.config.issuer_url = "https://keycloak.example.org"
+
+          expect(service.decode_and_verify(token)).to_not be_nil
+        end
+      end
+
+      context "when 'issuer_url' is configured and the token's issuer matches 'server_url' instead" do
+        let(:token) { sign_raw_claims("iss" => "http://localhost:8080/realms/master", "exp" => (Time.now + 3600).to_i) }
+
+        it "should raise an error :invalid_realm" do
+          KeycloakApiRails.config.issuer_url = "https://keycloak.example.org"
+
+          expect {
+            service.decode_and_verify(token)
+          }.to raise_error(KeycloakApiRails::TokenError, "JWT token does not have a valid realm")
+        end
+      end
+    end
+
     describe "the 'aud' claim" do
       context "when no audience is expected" do
         let(:claims) { { "aud" => "another-api" } }

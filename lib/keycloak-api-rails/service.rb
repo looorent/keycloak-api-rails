@@ -116,8 +116,9 @@ module KeycloakApiRails
       raise TokenError.invalid_audience(token)     unless audience_valid?(decoded_token)
       raise TokenError.invalid_token_type(token)   unless token_type_valid?(decoded_token)
 
-      if KeycloakApiRails.config.server_url
-        expected_iss = File.join(KeycloakApiRails.config.server_url.to_s, "realms", realm_id.to_s)
+      issuer_url = KeycloakApiRails.config.issuer_url || KeycloakApiRails.config.server_url
+      if issuer_url
+        expected_iss = File.join(issuer_url.to_s, "realms", realm_id.to_s)
         raise TokenError.invalid_realm(token) unless decoded_token["iss"] == expected_iss
       end
     end

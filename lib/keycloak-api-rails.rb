@@ -78,6 +78,7 @@ module KeycloakApiRails
   def self.load_configuration
     configure do |config|
       config.server_url                             = nil
+      config.issuer_url                             = nil
       config.realm_id                               = nil
       config.logger                                 = ::Logger.new(STDOUT)
       config.skip_paths                             = {}

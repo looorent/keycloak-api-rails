@@ -7,6 +7,7 @@ module KeycloakApiRails
     LOGGER_METHODS = [:debug, :info, :warn, :error].freeze
 
     attr_accessor :server_url
+    attr_accessor :issuer_url
     attr_accessor :realm_id
     attr_accessor :skip_paths
     attr_accessor :opt_in
@@ -27,6 +28,7 @@ module KeycloakApiRails
       errors = []
 
       errors.push("'server_url' must be a String or nil, got #{server_url.inspect}") unless server_url.nil? || server_url.is_a?(String)
+      errors.push("'issuer_url' must be a String or nil, got #{issuer_url.inspect}") unless issuer_url.nil? || issuer_url.is_a?(String)
       errors.push("'realm_id' must be a String, an Array of Strings, a Proc, or nil, got #{realm_id.inspect}") unless valid_realm_id?(realm_id)
       errors.push("'logger' must respond to #{LOGGER_METHODS.join(', ')}") unless LOGGER_METHODS.all? { |method| logger.respond_to?(method) }
       errors.push("'opt_in' must be true or false, got #{opt_in.inspect}") unless boolean?(opt_in)
